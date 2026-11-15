@@ -40,9 +40,11 @@ def relax():
 
 
 rec.park()
-# The hand starts resting lower in the list; the loop also ends there.
-x, y = icon("Latte")
-start = (x + rng.uniform(150, 200), y + rng.uniform(-6, 6))
+# The hand starts on the article being read (the selected tab). Collapsing its
+# tree moves the selection to "Coffee", so the GIF ends by clicking back on the
+# article from this same spot: selection, hover and cursor all match when it loops.
+x, y = icon("Angelo Moriondo")
+start = (x + rng.uniform(70, 150), y + rng.uniform(-5, 5))
 rec.pointer = start
 rec.idle(0.7)
 
@@ -57,6 +59,8 @@ rec.idle(0.7)
 press("History of coffee")   # and expand that too
 relax()
 rec.idle(1.0)
-rec.glide(*start)            # drift back so the loop is seamless
-rec.idle(0.5)
+rec.glide(*start)            # back to the article...
+rec.idle(rng.uniform(0.15, 0.25))
+rec.click()                  # ...and select it again
+rec.idle(0.6)
 rec.save(os.path.join(ROOT, "docs/screenshots/collapse.gif"))
