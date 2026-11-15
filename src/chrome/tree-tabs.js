@@ -1078,11 +1078,13 @@
         const x = (depth - 1) * INDENT_PX + centerOf(ancestors.at(-1));
         if (continues[depth - 1]) {
           layers.push(line(x, "top", "100%"));
-          if (ownColumn) {
-            lit.push(line(x, "top", ownColumn === 1 ? "100%" : "50%", true));
+          if (ownColumn === 1) {
+            lit.push(line(x, "top", "100%", true));
           }
-        } else {
-          // Last child: rounded elbow that stops just before the favicon.
+        }
+        // Rounded branch into the favicon: always for the last child, and for a
+        // middle child when the highlighted path turns into it.
+        if (!continues[depth - 1] || ownColumn === 2) {
           elbow = `left:${x}px;width:${ownCenter - 11 - x}px`;
         }
       }
