@@ -1063,58 +1063,60 @@
       const insetTop = isTab ? 0 : metrics.groupInsetTop;
       const insetBottom = isTab ? 0 : metrics.groupInsetBottom;
       const ownCenter = depth * INDENT_PX + centerOf(node);
-      const line = (x, y, h, lit = false) => {
-        const color = lit ? "var(--ztt-guide-active-color)" : "var(--ztt-guide-color)";
-        return `linear-gradient(${color}, ${color}) ${x}px ${y} / 1px ${h} no-repeat`;
-      };
-      const lit = []; // drawn on top of the regular lines
-      const layers = [];
+      // Segments are bordered elements rather than background gradients: borders
+      // snap to whole device pixels, so every segment has the same crisp
+      // thickness at any zoom level (gradients blur across 1 or 2 pixels).
+      const segments = []; // [x, kind ("full" | "stub" | "elbow"), lit, width]
       for (let k = 0; k < depth - 1; k++) {
         if (continues[k]) {
-          (active.columns[k] ? lit : layers).push(line(k * INDENT_PX + centerOf(ancestors[k]), "top", "100%", !!active.columns[k]));
+          segments.push([k * INDENT_PX + centerOf(ancestors[k]), "full", active.columns[k] === 1]);
         }
       }
-      let elbow = "";
       const ownColumn = active.columns[depth - 1];
       if (depth) {
         const x = (depth - 1) * INDENT_PX + centerOf(ancestors.at(-1));
         if (continues[depth - 1]) {
-          layers.push(line(x, "top", "100%"));
-          if (ownColumn === 1) {
-            lit.push(line(x, "top", "100%", true));
-          }
+          segments.push([x, "full", ownColumn === 1]);
         }
         // Rounded branch into the favicon: always for the last child, and for a
         // middle child when the highlighted path turns into it.
         if (!continues[depth - 1] || ownColumn === 2) {
-          elbow = `left:${x}px;width:${ownCenter - 11 - x}px`;
+          segments.push([x, "elbow", ownColumn === 2, ownCenter - 11 - x]);
         }
       }
       if (stub) {
-        (active.stub ? lit : layers).push(line(ownCenter, "bottom", "calc(50% - 10px)", active.stub));
+        segments.push([ownCenter, "stub", active.stub]);
       }
-      layers.unshift(...lit);
       const css =
         `left:${-(depth * INDENT_PX + inset)}px;width:${ownCenter + 1}px;` +
-        `top:${-insetTop}px;bottom:${-insetBottom}px;background:${layers.join(",") || "none"}`;
+        `top:${-insetTop}px;bottom:${-insetBottom}px`;
 
       let guides = tab.querySelector(":scope > .ztt-guides");
       if (!guides) {
         guides = document.createElement("div");
         guides.className = "ztt-guides";
-        guides.append(document.createElement("div"));
-        guides.firstChild.className = "ztt-elbow";
         // Appended last: Zen's split preview inserts relative to the tab's first child.
         tab.append(guides);
       }
       if (guides.style.cssText !== css) {
         guides.style.cssText = css;
       }
-      const elbowEl = guides.firstChild;
-      elbowEl.hidden = !elbow;
-      elbowEl.toggleAttribute("active", !!elbow && ownColumn === 2);
-      if (elbow && elbowEl.style.cssText !== elbow) {
-        elbowEl.style.cssText = elbow;
+      const signature = JSON.stringify(segments);
+      if (guides.dataset.segments !== signature) {
+        guides.dataset.segments = signature;
+        guides.replaceChildren(
+          ...segments.map(([x, kind, lit, width]) => {
+            const el = document.createElement("div");
+            el.className = "ztt-line";
+            el.setAttribute("kind", kind);
+            el.toggleAttribute("lit", lit);
+            el.style.left = `${x}px`;
+            if (width) {
+              el.style.width = `${width}px`;
+            }
+            return el;
+          })
+        );
       }
       tab.setAttribute(ATTR.guides, "true");
     }

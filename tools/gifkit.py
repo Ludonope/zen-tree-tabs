@@ -89,17 +89,26 @@ class Recorder:
             self._stroke(x, y, 0.08 + 0.02 * error, self.rng.uniform(-0.05, 0.05), skew=1.0)
 
     def idle(self, seconds):
-        """Holds still the way a resting hand does: tiny random drift."""
+        """Pauses like a hand on a mouse: a touch of settling right after arriving,
+        perfectly still while resting, and a slight twitch just before moving on
+        (re-gripping) on longer pauses."""
+        rng = self.rng
         ax, ay = self.pointer
-        elapsed = 0
-        while elapsed < seconds * 1000:
-            dt = self.rng.randint(130, 260)
-            x, y = self.pointer
-            # Random walk, gently pulled back toward where the pause began.
-            x += self.rng.uniform(-0.8, 0.8) + (ax - x) * 0.3
-            y += self.rng.uniform(-0.8, 0.8) + (ay - y) * 0.3
-            self._frame(x, y, dt)
-            elapsed += dt
+
+        def nudge(ms):
+            self._frame(ax + rng.uniform(-0.9, 0.9), ay + rng.uniform(-0.7, 0.7), ms)
+
+        settle = 0
+        for _ in range(rng.choice((1, 1, 2))):
+            ms = rng.randint(50, 100)
+            nudge(ms)
+            settle += ms
+        grip = rng.randint(50, 90) if seconds > 0.45 else 0
+        still = seconds * 1000 - settle - grip
+        if still > 0:
+            self.shot(max(2, round(still / 10)), self.pointer)
+        if grip:
+            nudge(grip)
 
     def click(self):
         self._pointer([{"type": "pointerDown", "button": 0}, {"type": "pointerUp", "button": 0}])

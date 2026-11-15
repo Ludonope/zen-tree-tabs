@@ -36,17 +36,27 @@
   pointer-events: none;
 }
 
-/* Last child: rounded corner from the parent's line into the favicon. */
-.ztt-elbow {
+/* One guide segment. Borders (not gradients) so all segments get the same
+ * device-pixel-snapped thickness. */
+.ztt-line {
   position: absolute;
-  top: 0;
-  height: calc(50% + 0.5px);
-  box-sizing: border-box;
+  inset-block: 0;
   border-inline-start: 1px solid var(--ztt-guide-color);
-  border-block-end: 1px solid var(--ztt-guide-color);
-  border-end-start-radius: 6px;
 
-  &[active] {
+  /* From under the favicon down to the first child. */
+  &[kind="stub"] {
+    top: calc(50% + 10px);
+  }
+  /* Rounded corner from the parent's line into the favicon. */
+  &[kind="elbow"] {
+    bottom: auto;
+    height: calc(50% + 0.5px);
+    box-sizing: border-box;
+    border-block-end: 1px solid var(--ztt-guide-color);
+    border-end-start-radius: 6px;
+  }
+  /* The selected tab's path, drawn above the regular lines. */
+  &[lit] {
     border-color: var(--ztt-guide-active-color);
     z-index: 1;
   }
