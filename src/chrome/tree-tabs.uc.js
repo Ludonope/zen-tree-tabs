@@ -1,7 +1,9 @@
 /* Tree tabs for Zen's native vertical tab strip.
  *
- * Loaded into every browser window by experiment/parent.js; exposes
- * window.gZenTreeTabs.
+ * Loaded into every browser window, either by the WebExtension
+ * (experiment/parent.js) or by the Sine mod manager (theme.json). It starts
+ * itself, loads tree-tabs.css from its own folder, and exposes
+ * window.gZenTreeTabs; stop() removes everything again.
  *
  * Model
  * -----
@@ -1232,5 +1234,44 @@
     }
   }
 
-  window.gZenTreeTabs = new ZenTreeTabs();
+  // ------------------------------------------------------------- bootstrap
+
+  // Another copy (add-on and Sine mod both installed) already runs here.
+  if (window.gZenTreeTabs) {
+    return;
+  }
+  const scriptURL = Components.stack.filename;
+  const styleURL = new URL("tree-tabs.css", scriptURL);
+  styleURL.search = new URL(scriptURL).search; // same cache-buster as the script
+  const instance = new ZenTreeTabs();
+  let state = "starting"; // -> "running" -> "stopped"
+
+  Object.assign(instance, {
+    scriptURL,
+    /** Tears everything down; safe to call at any point. */
+    stop() {
+      if (state === "running") {
+        instance.uninit();
+        window.windowUtils.removeSheetUsingURIString(styleURL.href, window.windowUtils.AUTHOR_SHEET);
+      }
+      state = "stopped";
+      if (window.gZenTreeTabs === instance) {
+        delete window.gZenTreeTabs;
+      }
+    },
+  });
+  window.gZenTreeTabs = instance;
+  // Sine: lets the mod be disabled without a restart (no-op elsewhere).
+  window.addUnloadListener?.(() => instance.stop());
+
+  (async () => {
+    // Zen builds its space tab containers asynchronously.
+    await window.gZenStartup?.promiseInitialized;
+    if (state !== "starting" || window.closed) {
+      return;
+    }
+    window.windowUtils.loadSheetUsingURIString(styleURL.href, window.windowUtils.AUTHOR_SHEET);
+    state = "running"; // before init(), so stop() also undoes a partial init
+    instance.init();
+  })().catch(e => console.error("zen-tree-tabs: failed to start", e));
 })();

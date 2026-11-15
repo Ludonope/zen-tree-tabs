@@ -1,16 +1,11 @@
-// Dev only: re-inject tree-tabs.js and tree-tabs.css into every window without restarting.
+// Dev only: reload tree-tabs.uc.js (and its stylesheet) in every window without restarting.
 //   tools/marionette.py evalf tools/reload.js
-const v = Date.now();
-const wins = [...Services.wm.getEnumerator("navigator:browser")].filter(w => w.gZenTreeTabs);
+const wins = [...Services.wm.getEnumerator("navigator:browser")];
 for (const w of wins) {
-  w.gZenTreeTabs.uninit();
-  delete w.gZenTreeTabs;
-  if (w.__zenTreeTabsSheet) {
-    w.windowUtils.removeSheetUsingURIString(w.__zenTreeTabsSheet, w.windowUtils.AUTHOR_SHEET);
-  }
-  w.__zenTreeTabsSheet = `chrome://zentreetabs/content/tree-tabs.css?${v}`;
-  w.windowUtils.loadSheetUsingURIString(w.__zenTreeTabsSheet, w.windowUtils.AUTHOR_SHEET);
-  Services.scriptloader.loadSubScript(`chrome://zentreetabs/content/tree-tabs.js?${v}`, w);
+  const url = new URL(w.gZenTreeTabs?.scriptURL ?? "chrome://zentreetabs/content/tree-tabs.uc.js");
+  w.gZenTreeTabs?.stop();
+  url.search = `?dev-${Date.now()}`;
+  Services.scriptloader.loadSubScript(url.href, w);
 }
-for (const w of wins) w.gZenTreeTabs.init();
-return `reloaded ${wins.length} window(s)`;
+await new Promise(r => setTimeout(r, 300));
+return `reloaded ${wins.filter(w => w.gZenTreeTabs).length} window(s)`;

@@ -1,12 +1,12 @@
 /* This experiment runs in the parent process with chrome privileges.
- * It registers the chrome/ folder as chrome://zentreetabs/content/ and
- * injects the tree implementation into every Zen browser window. */
+ * It registers the chrome/ folder as chrome://zentreetabs/content/ and loads
+ * the tree script into every Zen browser window. The script starts itself
+ * (see the bootstrap at the end of chrome/tree-tabs.uc.js). */
 "use strict";
 
 /* global ExtensionAPI, Services, Cc, Ci */
 
-const SCRIPT_URL = "chrome://zentreetabs/content/tree-tabs.js";
-const STYLE_URL = "chrome://zentreetabs/content/tree-tabs.css";
+const SCRIPT_URL = "chrome://zentreetabs/content/tree-tabs.uc.js";
 const WINDOW_TYPE = "navigator:browser";
 const DELAYED_STARTUP_TOPIC = "browser-delayed-startup-finished";
 
@@ -20,7 +20,7 @@ this.zenTreeTabs = class extends ExtensionAPI {
       ["content", "zentreetabs", "chrome/"],
     ]);
     // Cache-buster: chrome:// script/style caches would otherwise survive add-on updates.
-    this.cacheKey = `${this.extension.version}-${Date.now()}`;
+    this.scriptURL = `${SCRIPT_URL}?${this.extension.version}-${Date.now()}`;
 
     for (const win of Services.wm.getEnumerator(WINDOW_TYPE)) {
       if (win.gBrowserInit?.delayedStartupFinished) {
@@ -44,47 +44,30 @@ this.zenTreeTabs = class extends ExtensionAPI {
   }
 
   observe(subject, topic) {
-    if (topic === DELAYED_STARTUP_TOPIC && subject.document?.documentElement
-      .getAttribute("windowtype") === WINDOW_TYPE) {
+    if (
+      topic === DELAYED_STARTUP_TOPIC &&
+      subject.document?.documentElement.getAttribute("windowtype") === WINDOW_TYPE
+    ) {
       this.attach(subject);
     }
   }
 
-  async attach(win) {
-    if (win.gZenTreeTabs || win.__zenTreeTabsAttaching) {
-      return;
+  attach(win) {
+    if (win.gZenTreeTabs) {
+      return; // already running here (possibly the Sine mod)
     }
-    win.__zenTreeTabsAttaching = true;
     try {
-      // Zen builds its workspace tab containers asynchronously.
-      await win.gZenStartup?.promiseInitialized;
-      if (win.closed || !this.chromeHandle) {
-        return;
-      }
-      win.__zenTreeTabsSheet = `${STYLE_URL}?${this.cacheKey}`;
-      win.windowUtils.loadSheetUsingURIString(win.__zenTreeTabsSheet, win.windowUtils.AUTHOR_SHEET);
-      Services.scriptloader.loadSubScript(`${SCRIPT_URL}?${this.cacheKey}`, win);
-      win.gZenTreeTabs.init();
+      Services.scriptloader.loadSubScript(this.scriptURL, win);
     } catch (e) {
       console.error("zen-tree-tabs: failed to attach to window", e);
-    } finally {
-      delete win.__zenTreeTabsAttaching;
     }
   }
 
   detach(win) {
-    try {
-      win.gZenTreeTabs?.uninit();
-    } catch (e) {
-      console.error("zen-tree-tabs: failed to detach from window", e);
+    // Only stop our own copy, not one loaded by Sine.
+    if (win.gZenTreeTabs?.scriptURL === this.scriptURL) {
+      win.gZenTreeTabs.stop();
     }
-    delete win.gZenTreeTabs;
-    try {
-      if (win.__zenTreeTabsSheet) {
-        win.windowUtils.removeSheetUsingURIString(win.__zenTreeTabsSheet, win.windowUtils.AUTHOR_SHEET);
-      }
-    } catch {}
-    delete win.__zenTreeTabsSheet;
   }
 
   getAPI() {
