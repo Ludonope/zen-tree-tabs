@@ -175,14 +175,18 @@ To publish a new version:
 
 1. Bump `version` in [src/manifest.json](src/manifest.json) and in
    [theme.json](theme.json). Zen only treats a higher version number as an upgrade.
-2. Run `tools/build.sh` to build `dist/zen-tree-tabs-<version>.xpi`. The file is a
-   plain zip of `src/` and is gitignored.
-3. Tag the commit and attach the `.xpi` to a GitHub release, for example:
+2. Commit, then tag the commit with the same version and push both:
 
    ```sh
-   git tag v0.3.1 && git push origin v0.3.1
-   gh release create v0.3.1 dist/zen-tree-tabs-0.3.1.xpi --title "v0.3.1" --notes "…"
+   git tag v0.4.2 && git push origin main v0.4.2
    ```
+
+   The [Release workflow](.github/workflows/release.yml) builds
+   `zen-tree-tabs-<version>.xpi` and publishes it as a GitHub release. It refuses to
+   publish if the tag doesn't match the manifest version.
+
+To build the `.xpi` locally, run `tools/build.sh`. The file goes to `dist/`, which is
+gitignored.
 
 Don't change the add-on ID (`zen-tree-tabs@ludonope` in the manifest). Zen uses it to
 recognize updates, so a different ID would install a second copy alongside the
