@@ -9,7 +9,6 @@
   --ztt-guide-active-color: color-mix(in srgb, currentColor 85%, transparent);
   /* Resolved here, where Zen's split view hasn't overridden it to 1. */
   --ztt-press-scale: var(--zen-active-tab-scale, 0.985);
-  --ztt-accent: var(--zen-primary-color, AccentColor);
 }
 
 /* ------------------------------------------------------------ indentation */
@@ -148,7 +147,8 @@
 
 .tabbrowser-tab[ztt-drop-target] .tab-background,
 tab-group[split-view-group][ztt-drop-target] .tab-background {
-  outline: 1.5px solid var(--ztt-accent) !important;
+  /* Neutral contrast like the guides: the accent can be too dark in some themes. */
+  outline: 1.5px solid color-mix(in srgb, currentColor 60%, transparent) !important;
   outline-offset: -1.5px;
-  background-color: color-mix(in srgb, var(--ztt-accent) 18%, transparent) !important;
+  background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
 }

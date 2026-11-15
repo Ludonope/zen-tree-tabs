@@ -4,6 +4,11 @@ Tree Style Tab–like tab trees inside Zen's native vertical tab strip. It works
 spaces, essentials, pinned tabs, folders, split view and window sync instead of
 replacing the sidebar.
 
+| A browsing session as trees | Dragging a tab onto another to nest it |
+| :---: | :---: |
+| <img src="docs/screenshots/overview.png" width="300" alt="Zen's sidebar with three tab trees: a Wikipedia rabbit hole four levels deep with the path to the selected tab highlighted, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view"> | <img src="docs/screenshots/drag-to-nest.png" width="300" alt="The same sidebar while dragging the Latte tab onto the Ethiopia tab, which is outlined to show it will become the parent"> |
+| A Wikipedia rabbit hole with the path to the selected tab lit up, a collapsed YouTube tree hiding 4 tabs, and a split view inside a GitHub tree. | Dropping on the middle of a tab makes the dragged tab its child. |
+
 ## How it works
 
 - Tabs opened from a page (links, middle-click, `target=_blank`, `window.open`)
@@ -193,7 +198,8 @@ tools/zoom.sh out.png        # zoomed screenshot of the sidebar
 ```
 
 `tools/fixture.js` builds a sample tree and `tools/drag.js` simulates a drag through
-Zen's handlers. Both expect test pages served on `127.0.0.1:8765`.
+Zen's handlers. Both expect test pages served on `127.0.0.1:8765`. `tools/demo.js`
+builds the session shown in the README screenshots from real sites.
 
 Layout:
 
