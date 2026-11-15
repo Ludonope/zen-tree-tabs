@@ -1,45 +1,48 @@
 # Zen Tree Tabs
 
-Tree Style Tab–like tab trees inside Zen's native vertical tab strip. It works with
-spaces, essentials, pinned tabs, folders, split view and window sync instead of
-replacing the sidebar.
+Tree Style Tab–like tab trees for [Zen](https://zen-browser.app), right in Zen's own
+tab list. Links you open land under the page they came from, so a rabbit hole stays
+one tidy branch.
 
 <p align="center">
   <img src="docs/screenshots/drag-subtree.gif" width="320" alt="Animation of Zen's sidebar with three tab trees: a Wikipedia rabbit hole, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view. The Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse.">
 </p>
 <p align="center">
-  <sub>A browsing session as trees. Drop a tab on the middle of another to make it a child, and its own children come along.
-  The collapsed YouTube tree hides 4 tabs, and a split view sits inside the GitHub tree.</sub>
+  <sub>Moving a branch: drop a tab on another and its children come along.</sub>
 </p>
 
-## How it works
+## Features
 
-- Tabs opened from a page (links, middle-click, `target=_blank`, `window.open`)
-  become children of the tab that opened them. Tabs you open yourself (Ctrl+T, the
-  URL bar, bookmarks) stay top-level.
-- Guide lines show the hierarchy, and the path from the root to the selected tab is
-  highlighted. Hover a parent's favicon to get the twisty, then
-  click to collapse or expand. A collapsed parent shows how many tabs it hides.
-  Selecting a hidden tab (for example with Ctrl+Tab) expands its ancestors.
-- Drag a tab onto the middle of another tab to make it a child; drop near a tab's
-  top or bottom edge to place it before or after. Zen's drag-to-split still works:
-  keep hovering until the split preview appears.
-- Closing a parent promotes its first child, and the other children move under it.
-- Moving a tab moves its whole subtree with it. The tab's parent is re-derived
-  from where it lands.
-- A split view acts as a single tree node and keeps its place in the tree.
-- Pinning a tab, or moving it into a folder, takes it out of the tree.
-- The tree is saved with the session and stays in sync across Zen's synced windows.
+- **Automatic nesting.** A link you open from a page becomes that page's child.
+  Tabs you open yourself (new tab, address bar, bookmarks) stay at the top level.
+- **Collapse and expand.** Hover a parent's icon and click the arrow. A collapsed
+  parent shows how many tabs it hides.
+- **See where you are.** Guide lines connect parents and children, and the branch
+  leading to your current tab is highlighted.
+- **Drag to rearrange.** Drop a tab on the middle of another to put it inside.
+  Drop near the top or bottom edge to place it before or after. Children always
+  come along.
+- **Split views stay in the tree.** A split counts as one entry, with its place and
+  its children kept.
+- **Saved automatically.** Trees survive restarts and look the same in every window.
+- **Menu and shortcuts.** Right-click a tab and open **Tree** for collapse/expand,
+  close tree, indent, outdent and more. Or use the keyboard:
 
-| Shortcut        | Action                                                    |
-| --------------- | --------------------------------------------------------- |
-| `Alt+Shift+→`   | Indent: become the last child of the previous sibling     |
-| `Alt+Shift+←`   | Outdent: become the next sibling of the parent            |
-| `Alt+Shift+↓`   | Collapse or expand the current branch                     |
+  | Shortcut      | Action                                       |
+  | ------------- | -------------------------------------------- |
+  | `Alt+Shift+→` | Indent: nest under the previous tab at the same level |
+  | `Alt+Shift+←` | Outdent: move up one level                             |
+  | `Alt+Shift+↓` | Collapse or expand the current branch                  |
 
-The tab context menu has a **Tree** submenu with these items: collapse or expand,
-close tree, close children, indent, outdent, detach from tree, and collapse or
-expand all trees.
+### Good to know
+
+- Closing a parent doesn't close its children: the first child takes its place.
+- Pinned tabs and essentials are never part of a tree. Pinning a tab, or moving it
+  into a folder, takes it out of its tree.
+- Each space has its own trees.
+- Tabs that were already open when you install stay flat; trees form as you browse.
+- Zen's drag-to-split still works: hold the dragged tab over another one a little
+  longer, until the split preview appears.
 
 ## Install
 
