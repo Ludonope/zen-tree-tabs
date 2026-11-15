@@ -72,7 +72,8 @@
     /** Explicit "drop as child" from drag and drop: { parent, nodes:Set }. */
     #dropIntent = null;
     #dropTarget = null;
-    #iconCenter = 0;
+    /** Favicon geometry, see #measure(). */
+    #metrics = { tabCenter: 19, groupCenter: 19, groupInset: 4, groupInsetTop: 4, groupInsetBottom: 4 };
     #cleanups = [];
 
     // ---------------------------------------------------------------- setup
@@ -124,7 +125,6 @@
         el.remove();
       }
       document.documentElement.style.removeProperty("--ztt-indent-step");
-      document.documentElement.style.removeProperty("--ztt-icon-center");
     }
 
     handleEvent(event) {
@@ -936,6 +936,7 @@
           descendantCounts.set(a, (descendantCounts.get(a) ?? 0) + 1);
         }
       }
+      this.#measure([...info.keys()]);
       const hasLaterSibling = node => {
         const { ancestors } = info.get(node);
         return lastChild.get(ancestors.at(-1) ?? node.parentElement) !== node;
@@ -964,7 +965,7 @@
             this.#removeDecorations(member);
           }
         }
-        this.#decorate(lead, count, this.#isCollapsed(node), depth, [...ancestors.slice(1), node].map(hasLaterSibling));
+        this.#decorate(node, count, this.#isCollapsed(node), ancestors, [...ancestors.slice(1), node].map(hasLaterSibling));
       }
 
       // Tabs and groups that are not (or no longer) tree nodes.
@@ -995,10 +996,12 @@
     /**
      * Twisty + collapsed badge on the favicon, and the guide lines left of the node.
      *
+     * @param ancestors  the node's ancestors, root first.
      * @param continues  for each level 1..depth, whether the node on this tab's
      *                   path at that level has a later sibling (line goes on below).
      */
-    #decorate(tab, count, collapsed, depth, continues) {
+    #decorate(node, count, collapsed, ancestors, continues) {
+      const tab = this.#leadOf(node);
       if (count) {
         const icon = tab.querySelector(".tab-icon-stack");
         if (icon && !icon.querySelector(".ztt-twisty")) {
@@ -1017,59 +1020,95 @@
         tab.removeAttribute(ATTR.twisty);
       }
 
+      const depth = ancestors.length;
       const stub = count > 0 && !collapsed; // line from the favicon down to the first child
       if (!depth && !stub) {
         tab.removeAttribute(ATTR.guides);
         tab.querySelector(".ztt-guides")?.remove();
         return;
       }
-      // x positions are relative to the depth-0 tab edge, i.e. the guides' start.
-      const center = this.#measureIconCenter(tab);
-      const ownCenter = depth * INDENT_PX + center;
-      const line = (x, y, w, h) =>
-        `linear-gradient(var(--ztt-guide-color), var(--ztt-guide-color)) ${x}px ${y} / ${w} ${h} no-repeat`;
+      // x positions are relative to the edge of a depth-0 node, where the guides start.
+      const metrics = this.#metrics;
+      const centerOf = n => (gBrowser.isTab(n) ? metrics.tabCenter : metrics.groupCenter);
+      // A split group's guides live in its lead tab, which is inset within the group.
+      const isTab = gBrowser.isTab(node);
+      const inset = isTab ? 0 : metrics.groupInset;
+      const insetTop = isTab ? 0 : metrics.groupInsetTop;
+      const insetBottom = isTab ? 0 : metrics.groupInsetBottom;
+      const ownCenter = depth * INDENT_PX + centerOf(node);
+      const line = (x, y, h) =>
+        `linear-gradient(var(--ztt-guide-color), var(--ztt-guide-color)) ${x}px ${y} / 1px ${h} no-repeat`;
       const layers = [];
-      for (let level = 1; level < depth; level++) {
-        if (continues[level - 1]) {
-          layers.push(line((level - 1) * INDENT_PX + center, "top", "1px", "100%"));
+      for (let k = 0; k < depth - 1; k++) {
+        if (continues[k]) {
+          layers.push(line(k * INDENT_PX + centerOf(ancestors[k]), "top", "100%"));
         }
       }
+      let elbow = "";
       if (depth) {
-        const x = (depth - 1) * INDENT_PX + center;
-        const elbowEnd = ownCenter - 11; // stop just before the favicon
-        layers.push(line(x, "top", "1px", continues[depth - 1] ? "100%" : "50%"));
-        layers.push(line(x, "center", `${elbowEnd - x}px`, "1px"));
+        const x = (depth - 1) * INDENT_PX + centerOf(ancestors.at(-1));
+        if (continues[depth - 1]) {
+          layers.push(line(x, "top", "100%"));
+        } else {
+          // Last child: rounded elbow that stops just before the favicon.
+          elbow = `left:${x}px;width:${ownCenter - 11 - x}px`;
+        }
       }
       if (stub) {
-        layers.push(line(ownCenter, "bottom", "1px", "calc(50% - 10px)"));
+        layers.push(line(ownCenter, "bottom", "calc(50% - 10px)"));
       }
-      const css = `left:${-depth * INDENT_PX}px;width:${ownCenter + 1}px;background:${layers.join(",")}`;
+      const css =
+        `left:${-(depth * INDENT_PX + inset)}px;width:${ownCenter + 1}px;` +
+        `top:${-insetTop}px;bottom:${-insetBottom}px;background:${layers.join(",") || "none"}`;
 
       let guides = tab.querySelector(":scope > .ztt-guides");
       if (!guides) {
         guides = document.createElement("div");
         guides.className = "ztt-guides";
+        guides.append(document.createElement("div"));
+        guides.firstChild.className = "ztt-elbow";
         // Appended last: Zen's split preview inserts relative to the tab's first child.
         tab.append(guides);
       }
       if (guides.style.cssText !== css) {
         guides.style.cssText = css;
       }
+      const elbowEl = guides.firstChild;
+      elbowEl.hidden = !elbow;
+      if (elbow && elbowEl.style.cssText !== elbow) {
+        elbowEl.style.cssText = elbow;
+      }
       tab.setAttribute(ATTR.guides, "true");
     }
 
-    /** Horizontal distance from a tab's start edge to its favicon's center. */
-    #measureIconCenter(tab) {
-      if (!this.#iconCenter) {
-        const image = tab.querySelector(".tab-icon-image");
-        const tabRect = window.windowUtils.getBoundsWithoutFlushing(tab);
-        const imageRect = image && window.windowUtils.getBoundsWithoutFlushing(image);
-        if (imageRect?.width) {
-          this.#iconCenter = Math.round(imageRect.left + imageRect.width / 2 - tabRect.left);
-          document.documentElement.style.setProperty("--ztt-icon-center", `${this.#iconCenter}px`);
-        }
+    /**
+     * Favicon center relative to a node's start edge, for tabs and for split
+     * groups (whose lead tab is inset and padded differently), re-measured on
+     * every rebuild so density/theme changes are picked up.
+     */
+    #measure(nodes) {
+      const bounds = el => window.windowUtils.getBoundsWithoutFlushing(el);
+      const iconCenter = (node, lead) => {
+        const image = lead.querySelector(".tab-icon-image");
+        const rect = image && bounds(image);
+        return rect?.width ? rect.left + rect.width / 2 - bounds(node).left : null;
+      };
+      const tab = nodes.find(n => gBrowser.isTab(n) && !n.hasAttribute(ATTR.hidden));
+      const group = nodes.find(n => !gBrowser.isTab(n) && !n.hasAttribute(ATTR.hidden));
+      const tabCenter = tab && iconCenter(tab, tab);
+      if (tabCenter) {
+        this.#metrics.tabCenter = Math.round(tabCenter);
       }
-      return this.#iconCenter || 16;
+      const lead = group && this.#leadOf(group);
+      const groupCenter = lead && iconCenter(group, lead);
+      if (groupCenter) {
+        this.#metrics.groupCenter = Math.round(groupCenter);
+        const leadRect = bounds(lead);
+        const groupRect = bounds(group);
+        this.#metrics.groupInset = Math.round(leadRect.left - groupRect.left);
+        this.#metrics.groupInsetTop = Math.round(leadRect.top - groupRect.top);
+        this.#metrics.groupInsetBottom = Math.round(groupRect.bottom - leadRect.bottom);
+      }
     }
 
     // ------------------------------------------- persistence & window sync
