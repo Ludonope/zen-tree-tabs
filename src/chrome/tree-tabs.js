@@ -158,6 +158,7 @@
           if (this.nodeOf(target).hasAttribute(ATTR.hidden)) {
             this.#expandAncestors(this.nodeOf(target));
           }
+          this.scheduleFlush(); // highlight the new active path
           break;
         case "TabPinned":
           this.#detach(target);
@@ -942,6 +943,24 @@
         return lastChild.get(ancestors.at(-1) ?? node.parentElement) !== node;
       };
 
+      // Highlight the guides from the selected node's root down to it. A guide
+      // column in a row is on the path when its ancestor is on the path and the
+      // row comes before (fully lit) or is (lit down to the elbow) the path's
+      // next node.
+      const order = new Map([...info.keys()].map((n, i) => [n, i]));
+      const selected = this.nodeOf(gBrowser.selectedTab);
+      const path = info.has(selected) ? [...info.get(selected).ancestors, selected] : [];
+      const pathIndex = new Map(path.map((n, i) => [n, i]));
+      const activeColumns = (node, ancestors) =>
+        ancestors.map(a => {
+          const next = path[pathIndex.get(a) + 1];
+          if (!next) {
+            return 0;
+          }
+          const delta = order.get(node) - order.get(next);
+          return delta < 0 ? 1 : delta === 0 ? 2 : 0;
+        });
+
       for (const [node, { depth, hidden, ancestors }] of info) {
         const count = descendantCounts.get(node) ?? 0;
         if (depth) {
@@ -965,7 +984,10 @@
             this.#removeDecorations(member);
           }
         }
-        this.#decorate(node, count, this.#isCollapsed(node), ancestors, [...ancestors.slice(1), node].map(hasLaterSibling));
+        this.#decorate(node, count, this.#isCollapsed(node), ancestors, [...ancestors.slice(1), node].map(hasLaterSibling), {
+          columns: activeColumns(node, ancestors),
+          stub: pathIndex.has(node) && node !== selected,
+        });
       }
 
       // Tabs and groups that are not (or no longer) tree nodes.
@@ -999,8 +1021,11 @@
      * @param ancestors  the node's ancestors, root first.
      * @param continues  for each level 1..depth, whether the node on this tab's
      *                   path at that level has a later sibling (line goes on below).
+     * @param active     highlight of the selected tab's path: `columns[k]` is 0
+     *                   (off), 1 (whole row) or 2 (down to this node) for the
+     *                   ancestor-k column; `stub` lights the line under the favicon.
      */
-    #decorate(node, count, collapsed, ancestors, continues) {
+    #decorate(node, count, collapsed, ancestors, continues, active) {
       const tab = this.#leadOf(node);
       if (count) {
         const icon = tab.querySelector(".tab-icon-stack");
@@ -1036,27 +1061,35 @@
       const insetTop = isTab ? 0 : metrics.groupInsetTop;
       const insetBottom = isTab ? 0 : metrics.groupInsetBottom;
       const ownCenter = depth * INDENT_PX + centerOf(node);
-      const line = (x, y, h) =>
-        `linear-gradient(var(--ztt-guide-color), var(--ztt-guide-color)) ${x}px ${y} / 1px ${h} no-repeat`;
+      const line = (x, y, h, lit = false) => {
+        const color = lit ? "var(--ztt-guide-active-color)" : "var(--ztt-guide-color)";
+        return `linear-gradient(${color}, ${color}) ${x}px ${y} / 1px ${h} no-repeat`;
+      };
+      const lit = []; // drawn on top of the regular lines
       const layers = [];
       for (let k = 0; k < depth - 1; k++) {
         if (continues[k]) {
-          layers.push(line(k * INDENT_PX + centerOf(ancestors[k]), "top", "100%"));
+          (active.columns[k] ? lit : layers).push(line(k * INDENT_PX + centerOf(ancestors[k]), "top", "100%", !!active.columns[k]));
         }
       }
       let elbow = "";
+      const ownColumn = active.columns[depth - 1];
       if (depth) {
         const x = (depth - 1) * INDENT_PX + centerOf(ancestors.at(-1));
         if (continues[depth - 1]) {
           layers.push(line(x, "top", "100%"));
+          if (ownColumn) {
+            lit.push(line(x, "top", ownColumn === 1 ? "100%" : "50%", true));
+          }
         } else {
           // Last child: rounded elbow that stops just before the favicon.
           elbow = `left:${x}px;width:${ownCenter - 11 - x}px`;
         }
       }
       if (stub) {
-        layers.push(line(ownCenter, "bottom", "calc(50% - 10px)"));
+        (active.stub ? lit : layers).push(line(ownCenter, "bottom", "calc(50% - 10px)", active.stub));
       }
+      layers.unshift(...lit);
       const css =
         `left:${-(depth * INDENT_PX + inset)}px;width:${ownCenter + 1}px;` +
         `top:${-insetTop}px;bottom:${-insetBottom}px;background:${layers.join(",") || "none"}`;
@@ -1075,6 +1108,7 @@
       }
       const elbowEl = guides.firstChild;
       elbowEl.hidden = !elbow;
+      elbowEl.toggleAttribute("active", !!elbow && ownColumn === 2);
       if (elbow && elbowEl.style.cssText !== elbow) {
         elbowEl.style.cssText = elbow;
       }

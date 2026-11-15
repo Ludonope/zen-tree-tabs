@@ -9,7 +9,8 @@ replacing the sidebar.
 - Tabs opened from a page (links, middle-click, `target=_blank`, `window.open`)
   become children of the tab that opened them. Tabs you open yourself (Ctrl+T, the
   URL bar, bookmarks) stay top-level.
-- Guide lines show the hierarchy. Hover a parent's favicon to get the twisty, then
+- Guide lines show the hierarchy, and the path from the root to the selected tab is
+  highlighted. Hover a parent's favicon to get the twisty, then
   click to collapse or expand. A collapsed parent shows how many tabs it hides.
   Selecting a hidden tab (for example with Ctrl+Tab) expands its ancestors.
 - Drag a tab onto the middle of another tab to make it a child; drop near a tab's

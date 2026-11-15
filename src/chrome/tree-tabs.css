@@ -6,6 +6,9 @@
 
 :root {
   --ztt-guide-color: color-mix(in srgb, currentColor 22%, transparent);
+  --ztt-guide-active-color: color-mix(in srgb, currentColor 85%, transparent);
+  /* Resolved here, where Zen's split view hasn't overridden it to 1. */
+  --ztt-press-scale: var(--zen-active-tab-scale, 0.985);
   --ztt-accent: var(--zen-primary-color, AccentColor);
 }
 
@@ -43,6 +46,34 @@
   border-inline-start: 1px solid var(--ztt-guide-color);
   border-block-end: 1px solid var(--ztt-guide-color);
   border-end-start-radius: 6px;
+
+  &[active] {
+    border-color: var(--ztt-guide-active-color);
+    z-index: 1;
+  }
+}
+
+/* Zen shrinks a pressed tab (or split view); with guides inside it, that would
+ * shift the lines, so shrink only the tab's content instead. */
+:root:not([zen-renaming-tab="true"]) #tabbrowser-tabs:not([movingtab]) {
+  & .tabbrowser-tab[ztt-guides]:active,
+  & tab-group[split-view-group]:has(.tabbrowser-tab[ztt-guides]):active,
+  & tab-group[split-view-group]:has(.tabbrowser-tab[ztt-guides]) > .tab-group-container:active {
+    scale: none !important;
+  }
+
+  & .tabbrowser-tab[ztt-guides]:active:not(:has(.tab-content > image:active)) > .tab-stack,
+  & tab-group[split-view-group]:has(.tabbrowser-tab[ztt-guides]):active > .tab-group-container > .tabbrowser-tab > .tab-stack {
+    scale: var(--ztt-press-scale);
+    transform-origin: left center; /* keep the favicon on its guide line */
+  }
+}
+
+@media not (prefers-reduced-motion: reduce) {
+  .tabbrowser-tab[ztt-guides] > .tab-stack,
+  tab-group[split-view-group] > .tab-group-container > .tabbrowser-tab > .tab-stack {
+    transition: scale 0.1s ease;
+  }
 }
 
 :root:not([zen-sidebar-expanded="true"]) .ztt-guides {
