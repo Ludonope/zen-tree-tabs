@@ -47,6 +47,24 @@
   const INDENT_PX = 18;
   const CHILD_DROP_ZONE = [0.25, 0.75]; // middle band of a row = drop as child
   const MAX_DEPTH_WALK = 1000;
+
+  // rebuild() runs on every tab switch: only touch the DOM when a value really
+  // changes, so it doesn't trigger restyles or wake other attribute observers.
+  const setAttr = (el, name, value) => {
+    if (el.getAttribute(name) !== value) {
+      el.setAttribute(name, value);
+    }
+  };
+  const setDepthVar = (el, depth) => {
+    const value = depth ? String(depth) : "";
+    if (el.style.getPropertyValue("--ztt-depth") !== value) {
+      if (value) {
+        el.style.setProperty("--ztt-depth", value);
+      } else {
+        el.style.removeProperty("--ztt-depth");
+      }
+    }
+  };
   const TAB_EVENTS = [
     "TabOpen",
     "TabClose",
@@ -77,6 +95,7 @@
     /** Favicon geometry, see #measure(). */
     #metrics = { tabCenter: 19, groupCenter: 19, groupInset: 4, groupInsetTop: 4, groupInsetBottom: 4 };
     #cleanups = [];
+    #stopped = false;
 
     // ---------------------------------------------------------------- setup
 
@@ -109,6 +128,7 @@
     }
 
     uninit() {
+      this.#stopped = true; // a flush still queued must not redecorate afterwards
       for (const cleanup of this.#cleanups.reverse()) {
         try {
           cleanup();
@@ -867,6 +887,9 @@
 
     #flush() {
       this.#flushQueued = false;
+      if (this.#stopped) {
+        return;
+      }
       try {
         const opens = [...this.#pendingOpens];
         this.#pendingOpens.clear();
@@ -966,12 +989,11 @@
       for (const [node, { depth, hidden, ancestors }] of info) {
         const count = descendantCounts.get(node) ?? 0;
         if (depth) {
-          node.setAttribute(ATTR.depth, depth);
-          node.style.setProperty("--ztt-depth", depth);
+          setAttr(node, ATTR.depth, String(depth));
         } else {
           node.removeAttribute(ATTR.depth);
-          node.style.removeProperty("--ztt-depth");
         }
+        setDepthVar(node, depth);
         node.toggleAttribute(ATTR.hidden, hidden);
         node.toggleAttribute(ATTR.hasChildren, count > 0);
 
@@ -1008,7 +1030,7 @@
       for (const attr of NODE_COMPUTED_ATTRS) {
         el.removeAttribute(attr);
       }
-      el.style.removeProperty("--ztt-depth");
+      setDepthVar(el, 0);
     }
 
     #removeDecorations(tab) {
@@ -1038,10 +1060,11 @@
           badge.className = "ztt-count";
           icon.append(twisty, badge);
         }
-        tab.setAttribute(ATTR.twisty, collapsed ? "closed" : "open");
+        setAttr(tab, ATTR.twisty, collapsed ? "closed" : "open");
         const badge = tab.querySelector(".ztt-count");
-        if (badge) {
-          badge.textContent = count > 99 ? "99+" : String(count);
+        const text = count > 99 ? "99+" : String(count);
+        if (badge && badge.textContent !== text) {
+          badge.textContent = text;
         }
       } else {
         tab.removeAttribute(ATTR.twisty);
@@ -1098,7 +1121,9 @@
         // Appended last: Zen's split preview inserts relative to the tab's first child.
         tab.append(guides);
       }
-      if (guides.style.cssText !== css) {
+      // Compare with what we last wrote: the browser re-serializes cssText differently.
+      if (guides.dataset.css !== css) {
+        guides.dataset.css = css;
         guides.style.cssText = css;
       }
       const signature = JSON.stringify(segments);
@@ -1118,7 +1143,7 @@
           })
         );
       }
-      tab.setAttribute(ATTR.guides, "true");
+      setAttr(tab, ATTR.guides, "true");
     }
 
     /**
