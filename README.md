@@ -35,17 +35,105 @@ expand all trees.
 
 ## Install
 
-The add-on uses a privileged *experiment API* to reach Zen's tab strip, so it is
-unsigned. Zen allows unsigned privileged add-ons once you set two prefs:
+Zen Tree Tabs comes as a single `.xpi` file. Get the latest one from the
+[Releases page](https://github.com/Ludonope/zen-tree-tabs/releases), or build it
+yourself (see [Distributing](#distributing)).
 
-1. In `about:config`, set:
+### Why it needs two prefs
+
+To change Zen's own tab strip, the add-on has to run with full browser privileges
+through a WebExtension *experiment API*. Mozilla's add-on site (AMO) only signs
+experiment add-ons made by Mozilla itself, so this add-on is unsigned. Zen's
+release builds still accept unsigned and experiment add-ons, but only once you turn
+two prefs on.
+
+> [!WARNING]
+> `xpinstall.signatures.required = false` turns off the signature check for **every**
+> add-on in that profile, not just this one. Only install `.xpi` files from sources
+> you trust. Also note that this add-on, like any experiment add-on, has full access
+> to the browser.
+
+### Steps
+
+Do this once for each Zen profile:
+
+1. Open `about:config` and accept the warning.
+2. Set these two prefs. Double-click a pref to toggle it.
    - `xpinstall.signatures.required` → `false`
    - `extensions.experiments.enabled` → `true`
-2. Run `tools/build.sh` to build `dist/zen-tree-tabs-<version>.xpi`.
-3. In `about:addons`, open the gear menu, choose **Install Add-on From File…**, and pick
-   the `.xpi`.
+3. Open `about:addons`, click the gear icon, and choose **Install Add-on From File…**.
+   Pick `zen-tree-tabs-<version>.xpi` and confirm. You can also drag the `.xpi` onto
+   a Zen window.
 
-The add-on keeps working across Zen updates. You can disable or remove it at any time.
+The add-on starts right away, without a restart. Your existing tabs stay flat; new
+trees form as you open links. It should now appear as **Zen Tree Tabs** in
+`about:addons`.
+
+**Troubleshooting**
+
+- **Zen says the add-on could not be verified.** `xpinstall.signatures.required` is
+  still `true` in **this** profile. Prefs are per profile, so check `about:profiles` to
+  see which one you're in.
+- **The add-on is listed and enabled, but links don't nest.** It was installed before
+  `extensions.experiments.enabled` was set to `true`. Set the pref, then disable and
+  re-enable the add-on in `about:addons`, or restart Zen.
+
+### Setting it up with a script (many profiles or machines)
+
+Instead of using `about:config`, put the two prefs in a `user.js` file in the
+profile folder. Zen applies it at every startup:
+
+```js
+// <profile folder>/user.js
+user_pref("xpinstall.signatures.required", false);
+user_pref("extensions.experiments.enabled", true);
+```
+
+You can find the profile folder in `about:profiles`. On Linux it's usually
+`~/.zen/<id>.<name>/`. Restart Zen, then install the `.xpi` as in step 3.
+
+### Updating
+
+Install the newer `.xpi` the same way. It has the same add-on ID, so it replaces the
+old version in place. Your trees are stored in Zen's session data, not in the
+add-on, so they carry over.
+
+The add-on doesn't update itself, so check the Releases page for new versions.
+
+### Uninstalling
+
+Remove the add-on in `about:addons`. The indentation and decorations disappear
+immediately, and no tabs are hidden or lost. If you don't use other unsigned
+add-ons, you can then set the two prefs back to their defaults (right-click the
+pref in `about:config` and choose **Reset**).
+
+### Compatibility
+
+- This version was developed and tested with Zen 1.21.6b (Gecko 152) on Linux.
+- It hooks into Zen internals (tab containers, split view, drag and drop), so a
+  major Zen update can break parts of it. If tabs act strangely after a Zen update,
+  disable the add-on: your tabs stay intact.
+- Any Zen build that allows unsigned add-ons when `xpinstall.signatures.required` is
+  `false` can run it. This is true of official Zen release builds on Linux.
+
+## Distributing
+
+To publish a new version:
+
+1. Bump `version` in [src/manifest.json](src/manifest.json). Zen only treats a
+   higher version number as an upgrade.
+2. Run `tools/build.sh` to build `dist/zen-tree-tabs-<version>.xpi`. The file is a
+   plain zip of `src/` and is gitignored.
+3. Tag the commit and attach the `.xpi` to a GitHub release, for example:
+
+   ```sh
+   git tag v0.3.1 && git push origin v0.3.1
+   gh release create v0.3.1 dist/zen-tree-tabs-0.3.1.xpi --title "v0.3.1" --notes "…"
+   ```
+
+Don't change the add-on ID (`zen-tree-tabs@ludonope` in the manifest). Zen uses it to
+recognize updates, so a different ID would install a second copy alongside the
+first.
 
 ## Development
 
