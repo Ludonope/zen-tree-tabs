@@ -4,10 +4,10 @@ Tree Style Tab–like tab trees inside Zen's native vertical tab strip. It works
 spaces, essentials, pinned tabs, folders, split view and window sync instead of
 replacing the sidebar.
 
-| A browsing session as trees | Dragging a tab onto another to nest it |
+| A browsing session as trees | Moving a whole tree under another tab |
 | :---: | :---: |
-| <img src="docs/screenshots/overview.png" width="300" alt="Zen's sidebar with three tab trees: a Wikipedia rabbit hole four levels deep with the path to the selected tab highlighted, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view"> | <img src="docs/screenshots/drag-to-nest.png" width="300" alt="The same sidebar while dragging the Latte tab onto the Ethiopia tab, which is outlined to show it will become the parent"> |
-| A Wikipedia rabbit hole with the path to the selected tab lit up, a collapsed YouTube tree hiding 4 tabs, and a split view inside a GitHub tree. | Dropping on the middle of a tab makes the dragged tab its child. |
+| <img src="docs/screenshots/overview.png" width="300" alt="Zen's sidebar with three tab trees: a Wikipedia rabbit hole four levels deep with the path to the selected tab highlighted, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view"> | <img src="docs/screenshots/drag-subtree.gif" width="300" alt="Animation: the Espresso tab, which has three tabs under it, is dragged up onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse"> |
+| A Wikipedia rabbit hole with the path to the selected tab lit up, a collapsed YouTube tree hiding 4 tabs, and a split view inside a GitHub tree. | Drop a tab on the middle of another to make it a child. Its own children come along. |
 
 ## How it works
 
@@ -199,7 +199,8 @@ tools/zoom.sh out.png        # zoomed screenshot of the sidebar
 
 `tools/fixture.js` builds a sample tree and `tools/drag.js` simulates a drag through
 Zen's handlers. Both expect test pages served on `127.0.0.1:8765`. `tools/demo.js`
-builds the session shown in the README screenshots from real sites.
+builds the session shown in the README screenshots from real sites, and
+`tools/demo-gif.py` records the drag animation from it.
 
 Layout:
 
