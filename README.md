@@ -63,14 +63,25 @@ If both are installed, only one copy runs and the other stays idle.
 You need Sine installed already. See
 [Sine's installation guide](https://github.com/sineorg/docs/blob/main/src/installation.md).
 
-1. Open Zen's settings and go to Sine's page.
-2. Zen Tree Tabs isn't in Sine's store yet, so Sine treats it as an unofficial mod
-   and won't run its JavaScript by default. Turn on **Enable installing JS from
-   unofficial sources**, which is the `sine.allow-unsafe-js` pref. This lets any
-   mod you install from a GitHub link run code with full browser access, so only
-   install mods you trust.
-3. In the install field, enter `Ludonope/zen-tree-tabs` and install.
-4. Restart Zen if Sine asks you to.
+> [!IMPORTANT]
+> **Turn on Sine's "Enable installing JS from unofficial sources" first.** Zen Tree
+> Tabs isn't in Sine's store yet, so Sine counts it as an unofficial mod. Without
+> this setting, Sine still installs the mod and lists it as enabled, but never runs
+> it, and no error is shown.
+>
+> The setting lets any mod you install from a GitHub link run code with full browser
+> access, so only install mods you trust.
+
+1. Open Zen's settings and go to the **Sine Mods** page.
+2. Click the gear button next to the `username/repo` install field, and turn on
+   **Enable installing JS from unofficial sources**. This is the
+   `sine.allow-unsafe-js` pref.
+3. In the install field, enter `Ludonope/zen-tree-tabs` and click **Install**.
+4. Restart Zen.
+
+**Troubleshooting:** if the mod shows as installed but links don't nest, the setting
+from step 2 is off. Turn it on and restart Zen. To check whether the mod is running,
+right-click any tab: if the mod is running, the menu has a **Tree** submenu.
 
 Sine checks the repository for updates. To remove the mod, use Sine's mod list. You
 can disable it from there too, without restarting.
