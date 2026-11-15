@@ -229,9 +229,18 @@ mouse cursor that screenshots leave out.
 
 Layout:
 
-- `src/chrome/tree-tabs.uc.js` holds the tree model, event handling and persistence
-  (`window.gZenTreeTabs`). It starts itself, so the same file serves both loaders.
+- `src/chrome/tree-tabs.uc.js` is the entry point. It loads the parts below into a
+  private scope, starts itself, and exposes `window.gZenTreeTabs`, so the same file
+  serves both loaders.
+  - `tree-tabs/tree.js`: the tree model (tabs and split views as nodes, parent links,
+    queries and edits).
+  - `tree-tabs/controller.js`: tab events, tree edits and user actions.
+  - `tree-tabs/render.js`: depth, collapsing, twisty, badge and guide lines.
+  - `tree-tabs/store.js`: saving in the session and syncing across windows.
+  - `tree-tabs/dnd.js`: drop-as-child on top of Zen's drag and drop.
+  - `tree-tabs/ui.js`: the context menu and keyboard shortcuts.
+  - `tree-tabs/common.js`: shared constants and helpers.
+- `src/chrome/tree-tabs.css` holds all the styling.
 - `src/experiment/parent.js` is the add-on loader. It registers `chrome://zentreetabs/`
-  and loads the script into each browser window.
-- `theme.json` is the Sine loader. It points Sine at the same script.
-- `src/chrome/tree-tabs.css` handles indentation, collapsing and the twisty.
+  and loads the entry point into each browser window.
+- `theme.json` is the Sine loader. It points Sine at the same entry point.
