@@ -1,4 +1,4 @@
-// Builds the README demo session: real sites, opened as if by clicking links.
+// Builds the README demo session (see tools/demo-gif.py): real sites, opened as if by clicking links.
 //   tools/marionette.py evalf tools/demo.js
 const wait = ms => new Promise(r => setTimeout(r, ms));
 await gZenStartup.promiseInitialized;

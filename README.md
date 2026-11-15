@@ -202,7 +202,7 @@ tools/zoom.sh out.png        # zoomed screenshot of the sidebar
 
 `tools/fixture.js` builds a sample tree and `tools/drag.js` simulates a drag through
 Zen's handlers. Both expect test pages served on `127.0.0.1:8765`. `tools/demo.js`
-builds the session shown in the README screenshots from real sites, and
+builds the demo session from real sites, and
 `tools/demo-gif.py` records the drag animation from it.
 
 Layout:
