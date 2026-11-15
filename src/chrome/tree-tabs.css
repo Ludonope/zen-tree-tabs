@@ -1,0 +1,36 @@
+/* Zen Tree Tabs – loaded as an author sheet into browser windows. */
+
+:root {
+  --ztt-indent-step: 14px;
+}
+
+/* Indentation stacks on top of Zen's own folder indent. */
+:root[zen-sidebar-expanded="true"] #tabbrowser-tabs .tabbrowser-tab[ztt-depth]:not([zen-glance-tab]) {
+  margin-inline-start: calc(var(--zen-folder-indent, 0px) + var(--ztt-depth) * var(--ztt-indent-step)) !important;
+}
+
+/* Collapsed subtrees. */
+#tabbrowser-tabs .tabbrowser-tab[ztt-hidden]:not([selected]) {
+  display: none !important;
+}
+
+/* Twisty */
+.ztt-twisty {
+  display: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 4px;
+  list-style-image: url("chrome://global/skin/icons/arrow-down.svg");
+  -moz-context-properties: fill;
+  fill: currentColor;
+  transition: transform 0.12s ease;
+}
+
+:root[zen-sidebar-expanded="true"] .tabbrowser-tab[ztt-has-children] .ztt-twisty {
+  display: flex;
+}
+
+.tabbrowser-tab[ztt-collapsed] .ztt-twisty {
+  transform: rotate(-90deg);
+}

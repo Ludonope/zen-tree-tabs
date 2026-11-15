@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+  "name": "Zen Tree Tabs",
+  "version": "0.1.0",
+  "description": "Tree style tabs integrated into Zen's native vertical tab strip.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "zen-tree-tabs@ludonope",
+      "strict_min_version": "140.0"
+    }
+  },
+  "experiment_apis": {
+    "zenTreeTabs": {
+      "schema": "experiment/schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "script": "experiment/parent.js",
+        "events": ["startup"],
+        "paths": [["zenTreeTabs"]]
+      }
+    }
+  }
+}
