@@ -4,12 +4,10 @@ Tree Style Tab–like tab trees for [Zen](https://zen-browser.app), right in Zen
 tab list. Links you open land under the page they came from, so a rabbit hole stays
 one tidy branch.
 
-<p align="center">
-  <img src="docs/screenshots/drag-subtree.gif" width="320" alt="Animation of Zen's sidebar with three tab trees: a Wikipedia rabbit hole, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view. The Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse.">
-</p>
-<p align="center">
-  <sub>Moving a branch: drop a tab on another and its children come along.</sub>
-</p>
+| Collapse and expand | Move a branch |
+| :---: | :---: |
+| <img src="docs/screenshots/collapse.gif" width="300" alt="Animation: hovering the History of coffee tab's icon turns it into an arrow; clicking collapses its three child tabs and a badge showing 3 appears. Collapsing the Coffee tab folds the whole tree into one row with a badge showing 8. Expanding Coffee again shows History of coffee still collapsed, which is then expanded too."> | <img src="docs/screenshots/drag-subtree.gif" width="300" alt="Animation: the Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse."> |
+| Hover a parent's icon and click. Collapsed branches show how many tabs they hide. | Drop a tab on another and its children come along. |
 
 ## Features
 
@@ -204,9 +202,12 @@ tools/zoom.sh out.png        # zoomed screenshot of the sidebar
 ```
 
 `tools/fixture.js` builds a sample tree and `tools/drag.js` simulates a drag through
-Zen's handlers. Both expect test pages served on `127.0.0.1:8765`. `tools/demo.js`
-builds the demo session from real sites, and
-`tools/demo-gif.py` records the drag animation from it.
+Zen's handlers. Both expect test pages served on `127.0.0.1:8765`.
+
+The README GIFs are recorded from a real Zen. Run `tools/demo.js` to build the
+demo session from real sites, then `tools/gif-collapse.py` or `tools/gif-drag.py`
+(rebuild the session before each one). Both use `tools/gifkit.py`, which adds the
+mouse cursor that screenshots leave out.
 
 Layout:
 
