@@ -20,18 +20,20 @@ one tidy branch.
   come along.
 - **See where you are.** Guide lines connect parents and children, and the branch
   leading to your current tab is highlighted.
-- **Menu and shortcuts.** Right-click a tab and open **Tree** for collapse/expand,
-  close tree, indent, outdent and more. Or use the keyboard:
-
-  | Shortcut      | Action                                                |
-  | ------------- | ----------------------------------------------------- |
-  | `Alt+Shift+→` | Indent: nest under the previous tab at the same level |
-  | `Alt+Shift+←` | Outdent: move up one level                            |
-  | `Alt+Shift+↓` | Collapse or expand the current branch                 |
-
+- **Tree menu.** Right-click a tab and open **Tree** for collapse/expand, close
+  tree, indent, outdent and more. The most common actions also have
+  [keyboard shortcuts](#keyboard-shortcuts).
 - **Split views stay in the tree.** A split counts as one entry, with its place and
   its children kept.
 - **Saved automatically.** Trees survive restarts and look the same in every window.
+
+### Keyboard shortcuts
+
+| Shortcut      | Action                                                |
+| ------------- | ----------------------------------------------------- |
+| `Alt+Shift+→` | Indent: nest under the previous tab at the same level |
+| `Alt+Shift+←` | Outdent: move up one level                            |
+| `Alt+Shift+↓` | Collapse or expand the current branch                 |
 
 ### Good to know
 
