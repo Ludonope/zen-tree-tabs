@@ -9,13 +9,28 @@ replacing the sidebar.
 - Tabs opened from a page (links, middle-click, `target=_blank`, `window.open`)
   become children of the tab that opened them. Tabs you open yourself (Ctrl+T, the
   URL bar, bookmarks) stay top-level.
-- Click the twisty to collapse or expand a subtree. Selecting a hidden tab (for
-  example with Ctrl+Tab) expands its ancestors.
+- Guide lines show the hierarchy. Hover a parent's favicon to get the twisty, then
+  click to collapse or expand. A collapsed parent shows how many tabs it hides.
+  Selecting a hidden tab (for example with Ctrl+Tab) expands its ancestors.
+- Drag a tab onto the middle of another tab to make it a child; drop near a tab's
+  top or bottom edge to place it before or after. Zen's drag-to-split still works:
+  keep hovering until the split preview appears.
 - Closing a parent promotes its first child, and the other children move under it.
 - Moving a tab moves its whole subtree with it. The tab's parent is re-derived
   from where it lands.
-- Pinning a tab, or moving it into a folder or split view, takes it out of the tree.
+- A split view acts as a single tree node and keeps its place in the tree.
+- Pinning a tab, or moving it into a folder, takes it out of the tree.
 - The tree is saved with the session and stays in sync across Zen's synced windows.
+
+| Shortcut        | Action                                                    |
+| --------------- | --------------------------------------------------------- |
+| `Alt+Shift+→`   | Indent: become the last child of the previous sibling     |
+| `Alt+Shift+←`   | Outdent: become the next sibling of the parent            |
+| `Alt+Shift+↓`   | Collapse or expand the current branch                     |
+
+The tab context menu has a **Tree** submenu with these items: collapse or expand,
+close tree, close children, indent, outdent, detach from tree, and collapse or
+expand all trees.
 
 ## Install
 
@@ -38,7 +53,11 @@ tools/dev.sh [--fresh]   # throwaway Zen profile, add-on loaded from src/, Mario
 tools/marionette.py eval 'return gZenTreeTabs.descendantsOf(gBrowser.selectedTab).length'
 tools/marionette.py evalf tools/reload.js   # hot-reload src/chrome/tree-tabs.js into every window
 tools/marionette.py shot out.png
+tools/zoom.sh out.png        # zoomed screenshot of the sidebar
 ```
+
+`tools/fixture.js` builds a sample tree and `tools/drag.js` simulates a drag through
+Zen's handlers. Both expect test pages served on `127.0.0.1:8765`.
 
 Layout:
 

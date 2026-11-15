@@ -1,36 +1,112 @@
-/* Zen Tree Tabs – loaded as an author sheet into browser windows. */
+/* Zen Tree Tabs – loaded as an author sheet into browser windows.
+ *
+ * --ztt-indent-step and --ztt-icon-center are set on :root by tree-tabs.js;
+ * --ztt-depth is set on each indented node (tab or split-view group).
+ */
 
 :root {
-  --ztt-indent-step: 14px;
+  --ztt-guide-color: color-mix(in srgb, currentColor 22%, transparent);
+  --ztt-accent: var(--zen-primary-color, AccentColor);
 }
 
-/* Indentation stacks on top of Zen's own folder indent. */
-:root[zen-sidebar-expanded="true"] #tabbrowser-tabs .tabbrowser-tab[ztt-depth]:not([zen-glance-tab]) {
+/* ------------------------------------------------------------ indentation */
+
+/* Stacks on top of Zen's own folder indent. */
+:root[zen-sidebar-expanded="true"] #tabbrowser-tabs :is(.tabbrowser-tab, tab-group[split-view-group])[ztt-depth]:not([zen-glance-tab]) {
   margin-inline-start: calc(var(--zen-folder-indent, 0px) + var(--ztt-depth) * var(--ztt-indent-step)) !important;
 }
 
 /* Collapsed subtrees. */
-#tabbrowser-tabs .tabbrowser-tab[ztt-hidden]:not([selected]) {
+#tabbrowser-tabs :is(.tabbrowser-tab, tab-group[split-view-group])[ztt-hidden] {
   display: none !important;
 }
 
-/* Twisty */
+/* ------------------------------------------------------------ guide lines */
+
+/* Guides are drawn in the indentation, outside the tab's clipped box. */
+.tabbrowser-tab[ztt-guides] {
+  overflow-clip-margin: calc(var(--ztt-depth, 0) * var(--ztt-indent-step) + 2px);
+}
+
+.ztt-guides {
+  position: absolute;
+  inset-block: 0;
+  pointer-events: none;
+}
+
+:root:not([zen-sidebar-expanded="true"]) .ztt-guides {
+  display: none;
+}
+
+/* ----------------------------------------------------- twisty on favicon */
+
 .ztt-twisty {
   display: none;
-  flex-shrink: 0;
+  /* Same cell position as the favicon (the stack is wider than the icon). */
+  justify-self: start;
+  align-self: center;
   width: 16px;
   height: 16px;
-  margin-inline-end: 4px;
-  list-style-image: url("chrome://global/skin/icons/arrow-down.svg");
-  -moz-context-properties: fill;
+  list-style-image: url("chrome://browser/skin/zen-icons/arrow-down.svg");
+  -moz-context-properties: fill, fill-opacity;
   fill: currentColor;
-  transition: transform 0.12s ease;
+  fill-opacity: 0.85;
+  transition: rotate 0.12s ease;
 }
 
-:root[zen-sidebar-expanded="true"] .tabbrowser-tab[ztt-has-children] .ztt-twisty {
-  display: flex;
+.tabbrowser-tab[ztt-twisty="closed"] .ztt-twisty {
+  rotate: -90deg;
 }
 
-.tabbrowser-tab[ztt-collapsed] .ztt-twisty {
-  transform: rotate(-90deg);
+/* Hovering a parent's favicon turns it into the twisty. */
+:root[zen-sidebar-expanded="true"] .tabbrowser-tab[ztt-twisty] .tab-icon-stack:hover {
+  & > .ztt-twisty {
+    display: flex;
+  }
+  & > :not(.ztt-twisty, .ztt-count) {
+    opacity: 0 !important;
+  }
+  & > .ztt-count {
+    display: none !important;
+  }
+}
+
+/* Collapsed parents show how many tabs they hide. */
+.ztt-count {
+  display: none;
+  /* Anchored to the favicon's bottom-right corner (the stack is wider than the icon). */
+  justify-self: start;
+  align-self: end;
+  margin-inline-start: 9px;
+  translate: 0 35%;
+  min-width: 11px;
+  height: 11px;
+  padding-inline: 2px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: light-dark(rgb(0 0 0 / 0.8), rgb(255 255 255 / 0.9));
+  color: light-dark(white, black);
+  box-shadow: 0 0 0 1.5px var(--zen-colors-tertiary, light-dark(white, #1a1a1a));
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 11px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.tabbrowser-tab[ztt-twisty="closed"] .ztt-count {
+  display: block;
+}
+
+/* -------------------------------------------------- drop as child (drag) */
+
+:root[ztt-dropping-child] #zen-drag-indicator {
+  opacity: 0 !important;
+}
+
+.tabbrowser-tab[ztt-drop-target] .tab-background,
+tab-group[split-view-group][ztt-drop-target] .tab-background {
+  outline: 1.5px solid var(--ztt-accent) !important;
+  outline-offset: -1.5px;
+  background-color: color-mix(in srgb, var(--ztt-accent) 18%, transparent) !important;
 }

@@ -8,6 +8,8 @@ Usage:
   marionette.py content 'document.querySelector("a").click()'  # run JS in the selected tab
   marionette.py click '#link' [button]                    # real (trusted) click in the selected tab
   marionette.py chromeclick '.ztt-twisty' [button]        # real click on browser UI
+  marionette.py hover '.tab-icon-stack'                   # move the mouse over browser UI
+  marionette.py keys alt,shift ArrowRight                 # press a key chord in the browser window
 """
 import base64
 import json
@@ -98,6 +100,20 @@ def main():
                 {"type": "pointerDown", "button": button},
                 {"type": "pointerUp", "button": button},
             ]}]})
+        m.send("WebDriver:ReleaseActions", {})
+    elif cmd == "hover":
+        el = m.send("WebDriver:FindElement", {"using": "css selector", "value": arg})["value"]
+        m.send("WebDriver:PerformActions", {"actions": [{
+            "type": "pointer", "id": "mouse", "parameters": {"pointerType": "mouse"},
+            "actions": [{"type": "pointerMove", "origin": el, "x": 0, "y": 0}]}]})
+    elif cmd == "keys":
+        codes = {"alt": "\ue00a", "shift": "\ue008", "ctrl": "\ue009", "meta": "\ue03d",
+                 "ArrowLeft": "\ue012", "ArrowUp": "\ue013", "ArrowRight": "\ue014", "ArrowDown": "\ue015"}
+        mods = [codes[k] for k in arg.split(",") if k]
+        key = codes.get(sys.argv[3], sys.argv[3])
+        seq = [{"type": "keyDown", "value": k} for k in mods + [key]]
+        seq += [{"type": "keyUp", "value": k} for k in reversed(mods + [key])]
+        m.send("WebDriver:PerformActions", {"actions": [{"type": "key", "id": "kbd", "actions": seq}]})
         m.send("WebDriver:ReleaseActions", {})
     elif cmd == "shot":
         m.screenshot(arg)

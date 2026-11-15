@@ -61,7 +61,8 @@ this.zenTreeTabs = class extends ExtensionAPI {
       if (win.closed || !this.chromeHandle) {
         return;
       }
-      win.windowUtils.loadSheetUsingURIString(`${STYLE_URL}?${this.cacheKey}`, win.windowUtils.AUTHOR_SHEET);
+      win.__zenTreeTabsSheet = `${STYLE_URL}?${this.cacheKey}`;
+      win.windowUtils.loadSheetUsingURIString(win.__zenTreeTabsSheet, win.windowUtils.AUTHOR_SHEET);
       Services.scriptloader.loadSubScript(`${SCRIPT_URL}?${this.cacheKey}`, win);
       win.gZenTreeTabs.init();
     } catch (e) {
@@ -79,8 +80,11 @@ this.zenTreeTabs = class extends ExtensionAPI {
     }
     delete win.gZenTreeTabs;
     try {
-      win.windowUtils.removeSheetUsingURIString(`${STYLE_URL}?${this.cacheKey}`, win.windowUtils.AUTHOR_SHEET);
+      if (win.__zenTreeTabsSheet) {
+        win.windowUtils.removeSheetUsingURIString(win.__zenTreeTabsSheet, win.windowUtils.AUTHOR_SHEET);
+      }
     } catch {}
+    delete win.__zenTreeTabsSheet;
   }
 
   getAPI() {
