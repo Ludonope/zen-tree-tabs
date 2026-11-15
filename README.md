@@ -4,10 +4,13 @@ Tree Style Tab–like tab trees inside Zen's native vertical tab strip. It works
 spaces, essentials, pinned tabs, folders, split view and window sync instead of
 replacing the sidebar.
 
-| A browsing session as trees | Moving a whole tree under another tab |
-| :---: | :---: |
-| <img src="docs/screenshots/overview.png" width="300" alt="Zen's sidebar with three tab trees: a Wikipedia rabbit hole four levels deep with the path to the selected tab highlighted, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view"> | <img src="docs/screenshots/drag-subtree.gif" width="300" alt="Animation: the Espresso tab, which has three tabs under it, is dragged up onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse"> |
-| A Wikipedia rabbit hole with the path to the selected tab lit up, a collapsed YouTube tree hiding 4 tabs, and a split view inside a GitHub tree. | Drop a tab on the middle of another to make it a child. Its own children come along. |
+<p align="center">
+  <img src="docs/screenshots/drag-subtree.gif" width="320" alt="Animation of Zen's sidebar with three tab trees: a Wikipedia rabbit hole, a collapsed YouTube tree showing a count of 4 hidden tabs, and a GitHub tree containing a split view. The Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse.">
+</p>
+<p align="center">
+  <sub>A browsing session as trees. Drop a tab on the middle of another to make it a child, and its own children come along.
+  The collapsed YouTube tree hides 4 tabs, and a split view sits inside the GitHub tree.</sub>
+</p>
 
 ## How it works
 
