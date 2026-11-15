@@ -29,8 +29,8 @@ function createTreeMenu(ctrl) {
     closeTree: { label: "Close Tree", run: n => ctrl.closeTree(n) },
     closeChildren: { label: "Close Children", run: n => ctrl.closeChildren(n) },
     sep1: null,
-    indent: { label: "Indent", key: "Alt+Shift+→", run: n => ctrl.indent(n) },
-    outdent: { label: "Outdent", key: "Alt+Shift+←", run: n => ctrl.outdent(n) },
+    nest: { label: "Nest Under Sibling Above", key: "Alt+Shift+→", run: n => ctrl.nestUnderSiblingAbove(n) },
+    moveOut: { label: "Move Out of Parent", key: "Alt+Shift+←", run: n => ctrl.moveOutOfParent(n) },
     detach: { label: "Detach from Tree", run: n => ctrl.detachFromTree(n) },
     sep2: null,
     collapseAll: { label: "Collapse All Trees", run: () => ctrl.setAllCollapsed(true) },
@@ -78,8 +78,8 @@ function createTreeMenu(ctrl) {
     elements.toggle.disabled = !hasChildren;
     elements.closeTree.disabled = !hasChildren;
     elements.closeChildren.disabled = !hasChildren;
-    elements.indent.disabled = !tree.previousSibling(node);
-    elements.outdent.disabled = !hasParent;
+    elements.nest.disabled = !tree.previousSibling(node);
+    elements.moveOut.disabled = !hasParent;
     elements.detach.disabled = !hasParent;
   };
   menu.addEventListener("popupshowing", onShowing);
@@ -97,8 +97,8 @@ function createShortcuts(ctrl) {
   const commandset = document.createXULElement("commandset");
   commandset.id = "ztt-commandset";
   const shortcuts = [
-    ["VK_RIGHT", node => ctrl.indent(node)],
-    ["VK_LEFT", node => ctrl.outdent(node)],
+    ["VK_RIGHT", node => ctrl.nestUnderSiblingAbove(node)],
+    ["VK_LEFT", node => ctrl.moveOutOfParent(node)],
     [
       "VK_DOWN",
       node => {

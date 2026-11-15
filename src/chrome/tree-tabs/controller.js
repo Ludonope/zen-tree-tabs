@@ -343,8 +343,8 @@ class ZenTreeTabs {
     this.rebuild();
   }
 
-  /** Make `node` the last child of its previous sibling. */
-  indent(node) {
+  /** "Nest Under Sibling Above": `node` becomes the last child of its previous sibling. */
+  nestUnderSiblingAbove(node) {
     const tree = this.tree;
     const sibling = tree.isNode(node) && tree.previousSibling(node);
     if (!sibling) {
@@ -355,8 +355,8 @@ class ZenTreeTabs {
     this.rebuild();
   }
 
-  /** Make `node` the next sibling of its parent. */
-  outdent(node) {
+  /** "Move Out of Parent": `node` (with its subtree) becomes its parent's next sibling. */
+  moveOutOfParent(node) {
     const tree = this.tree;
     const parent = tree.isNode(node) && tree.parentOf(node);
     if (!parent) {

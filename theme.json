@@ -4,7 +4,7 @@
   "description": "Tree Style Tab-like tab trees inside Zen's native vertical tab strip: auto-nesting, collapsing, guide lines, drag to nest, split view support.",
   "homepage": "https://github.com/Ludonope/zen-tree-tabs",
   "author": "Ludonope",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "tags": ["tabs", "tree", "sidebar", "vertical tabs"],
   "createdAt": "2026-11-15",
   "readme": "README.md",
