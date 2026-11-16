@@ -20,7 +20,8 @@ function createTreeMenu(ctrl) {
     return tab ? tree.nodeOf(tab) : null;
   };
 
-  const separator = make("menuseparator", { id: "ztt-context-separator" });
+  const separatorAbove = make("menuseparator", { id: "ztt-context-separator-above" });
+  const separatorBelow = make("menuseparator", { id: "ztt-context-separator-below" });
   const submenu = make("menu", { id: "ztt-context-menu", label: "Tree" });
   const popup = make("menupopup", { id: "ztt-context-popup" });
   submenu.append(popup);
@@ -57,10 +58,22 @@ function createTreeMenu(ctrl) {
   }
   const anchor = document.getElementById("context_closeTab");
   if (anchor) {
-    anchor.before(separator, submenu);
+    anchor.before(separatorAbove, submenu, separatorBelow);
   } else {
-    menu.append(separator, submenu);
+    menu.append(separatorAbove, submenu, separatorBelow);
   }
+
+  // Native separators next to the anchor come and go (Zen's sync separator is
+  // hidden without sync), so only show ours where no visible one already sits.
+  const isVisible = el => !el.hidden && getComputedStyle(el).display !== "none";
+  const needsSeparator = (from, step) => {
+    for (let el = from[step]; el; el = el[step]) {
+      if (isVisible(el)) {
+        return el.localName !== "menuseparator";
+      }
+    }
+    return false;
+  };
 
   const onShowing = event => {
     if (event.target !== menu) {
@@ -68,10 +81,12 @@ function createTreeMenu(ctrl) {
     }
     const node = contextNode();
     const isNode = !!node && tree.isNode(node);
-    separator.hidden = submenu.hidden = !isNode;
+    separatorAbove.hidden = separatorBelow.hidden = submenu.hidden = !isNode;
     if (!isNode) {
       return;
     }
+    separatorAbove.hidden = !needsSeparator(separatorAbove, "previousElementSibling");
+    separatorBelow.hidden = !needsSeparator(separatorBelow, "nextElementSibling");
     const hasChildren = node.hasAttribute(ATTR.hasChildren);
     const hasParent = !!tree.parentOf(node);
     elements.toggle.setAttribute("label", tree.isCollapsed(node) ? "Expand Tree" : "Collapse Tree");
@@ -85,7 +100,8 @@ function createTreeMenu(ctrl) {
   menu.addEventListener("popupshowing", onShowing);
   return () => {
     menu.removeEventListener("popupshowing", onShowing);
-    separator.remove();
+    separatorAbove.remove();
+    separatorBelow.remove();
     submenu.remove();
   };
 }
