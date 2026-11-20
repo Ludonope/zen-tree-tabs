@@ -1,0 +1,74 @@
+:root {
+  color-scheme: light dark;
+  --fg: light-dark(#1c1b22, #fbfbfe);
+  --muted: light-dark(#5b5b66, #b0b0bd);
+  --line: light-dark(#d7d7db, #3a3944);
+  --card: light-dark(#f9f9fb, #2b2a33);
+  --accent: light-dark(#0060df, #54b3ff);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 16px 20px 72px;
+  font: 13px/1.45 system-ui, sans-serif;
+  color: var(--fg);
+  background: transparent;
+  max-width: 720px;
+}
+fieldset {
+  margin: 0 0 16px;
+  padding: 4px 14px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+}
+legend { padding: 0 6px; font-weight: 600; }
+.row {
+  display: grid;
+  grid-template-columns: 1fr minmax(190px, 270px);
+  gap: 4px 16px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+.row:first-of-type { border-top: 0; }
+.row[hidden] { display: none; }
+.label { font-weight: 500; }
+.desc { grid-column: 1; color: var(--muted); font-size: 12px; }
+.control { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+.row:not(:has(.desc)) .control { grid-row: 1; }
+select, input[type="text"], button {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+select { width: 100%; }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.value { min-width: 5.5em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.shortcut { width: 150px; text-align: center; cursor: pointer; }
+.shortcut:focus { outline: 2px solid var(--accent); }
+.shortcut.empty { color: var(--muted); font-style: italic; }
+footer {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 20px;
+  background: light-dark(#fff, #1c1b22);
+  border-top: 1px solid var(--line);
+}
+#status { color: var(--muted); }
+/* Dropdowns have long labels: give them the full row under the description. */
+.row.wide { grid-template-columns: 1fr; }
+.row.wide .control { grid-column: 1; grid-row: auto; }
+@media (max-width: 560px) {
+  .row { grid-template-columns: 1fr; }
+  .control { grid-column: 1; grid-row: auto; justify-content: stretch; }
+}

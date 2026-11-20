@@ -71,6 +71,48 @@ this.zenTreeTabs = class extends ExtensionAPI {
   }
 
   getAPI() {
-    return { zenTreeTabs: {} };
+    const BRANCH = "extensions.zentreetabs.";
+    const prefs = Services.prefs;
+    return {
+      zenTreeTabs: {
+        async getPrefs() {
+          const out = {};
+          for (const name of prefs.getChildList(BRANCH)) {
+            const key = name.slice(BRANCH.length);
+            switch (prefs.getPrefType(name)) {
+              case prefs.PREF_BOOL:
+                out[key] = prefs.getBoolPref(name);
+                break;
+              case prefs.PREF_INT:
+                out[key] = prefs.getIntPref(name);
+                break;
+              case prefs.PREF_STRING:
+                out[key] = prefs.getStringPref(name);
+                break;
+            }
+          }
+          return out;
+        },
+        async setPref(key, value) {
+          if (!/^[A-Za-z0-9]+$/.test(key)) {
+            throw new Error("invalid preference name");
+          }
+          const name = BRANCH + key;
+          prefs.clearUserPref(name); // a different type may be stored
+          if (typeof value === "boolean") {
+            prefs.setBoolPref(name, value);
+          } else if (typeof value === "number") {
+            prefs.setIntPref(name, Math.round(value));
+          } else {
+            prefs.setStringPref(name, String(value));
+          }
+        },
+        async resetPrefs() {
+          for (const name of prefs.getChildList(BRANCH)) {
+            prefs.clearUserPref(name);
+          }
+        },
+      },
+    };
   }
 };

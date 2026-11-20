@@ -9,17 +9,18 @@ const ATTR = {
   depth: "ztt-depth",
   hasChildren: "ztt-has-children",
   hidden: "ztt-hidden",
+  hue: "ztt-hue", // node belongs to a tree; its colour is in --ztt-hue
   // Computed by the renderer, on the tab showing a node's decorations:
   twisty: "ztt-twisty", // "open" | "closed"
   guides: "ztt-guides",
   // Drag and drop feedback:
   dropTarget: "ztt-drop-target",
 };
-const NODE_COMPUTED_ATTRS = [ATTR.depth, ATTR.hasChildren, ATTR.hidden];
+const NODE_COMPUTED_ATTRS = [ATTR.depth, ATTR.hasChildren, ATTR.hidden, ATTR.hue];
 const STORE_KEY = "zenTreeTabs";
 const SECTION_CLASS = "zen-workspace-normal-tabs-section";
 const TAB_DROP_TYPE = "application/x-moz-tabbrowser-tab";
-const INDENT_PX = 18;
+const INDENT_PX = 18; // default; the "indentSize" setting overrides it
 const CHILD_DROP_ZONE = [0.25, 0.75]; // middle band of a row = drop as child
 const MAX_DEPTH_WALK = 1000;
 
@@ -31,15 +32,18 @@ const setAttr = (el, name, value) => {
   }
 };
 
-const setDepthVar = (el, depth) => {
-  const value = depth ? String(depth) : "";
-  if (el.style.getPropertyValue("--ztt-depth") !== value) {
+const setStyleVar = (el, name, value) => {
+  value = value === "" || value == null ? "" : String(value);
+  if (el.style.getPropertyValue(name) !== value) {
     if (value) {
-      el.style.setProperty("--ztt-depth", value);
+      el.style.setProperty(name, value);
     } else {
-      el.style.removeProperty("--ztt-depth");
+      el.style.removeProperty(name);
     }
   }
 };
+
+const setDepthVar = (el, depth) => setStyleVar(el, "--ztt-depth", depth || "");
+const setHueVar = (el, hue) => setStyleVar(el, "--ztt-hue", hue ?? "");
 
 const isSidebarExpanded = () => document.documentElement.getAttribute("zen-sidebar-expanded") === "true";

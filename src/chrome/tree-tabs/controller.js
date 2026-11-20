@@ -19,14 +19,32 @@ const TAB_EVENTS = [
   "SSTabRestoring",
 ];
 
+const APPEARANCE_VARS = [
+  "--ztt-indent-step",
+  "--ztt-guide-style",
+  "--ztt-guide-width",
+  "--ztt-guide-opacity",
+  "--ztt-guide-active-opacity",
+  "--ztt-guide-gap",
+  "--ztt-guide-top-gap",
+  "--ztt-depth-tint",
+  "--ztt-tree-strength",
+];
+
 class ZenTreeTabs {
+  settings = new Settings();
   tree = new Tree();
-  renderer = new Renderer(this.tree);
+  renderer = new Renderer(this.tree, this.settings);
   store = new Store(() => this.scheduleFlush());
   dnd = new DragAndDrop(this.tree, () => this.scheduleFlush());
 
   #flushQueued = false;
-  #pendingOpens = new Set();
+  /** new tab -> the tab that was selected when it opened */
+  #pendingOpens = new Map();
+  #autoCollapsePending = false;
+  /** Tabs we are closing ourselves (or that a bulk close already planned): not re-planned. */
+  #closeMarks = new Set();
+  #shortcutsCleanup = null;
   #pendingMoves = new Set();
   #pendingGrouped = new Set();
   #cleanups = [];
@@ -35,7 +53,7 @@ class ZenTreeTabs {
   // ------------------------------------------------------------ lifecycle
 
   init() {
-    document.documentElement.style.setProperty("--ztt-indent-step", `${INDENT_PX}px`);
+    this.#applyAppearance();
     for (const type of TAB_EVENTS) {
       window.addEventListener(type, this);
     }
@@ -51,8 +69,17 @@ class ZenTreeTabs {
       },
       this.dnd.attach(),
       createTreeMenu(this),
-      createShortcuts(this)
+      () => this.#shortcutsCleanup?.(),
+      this.#guardClosing(),
+      () => this.settings.dispose()
     );
+    this.#shortcutsCleanup = createShortcuts(this);
+    this.settings.onChange(() => {
+      this.#applyAppearance();
+      this.#shortcutsCleanup?.();
+      this.#shortcutsCleanup = createShortcuts(this);
+      this.rebuild();
+    });
 
     for (const tab of gBrowser.tabs) {
       this.store.restore(tab);
@@ -77,7 +104,39 @@ class ZenTreeTabs {
     // Leave ztt-parent/ztt-collapsed alone: they are harmless without the
     // stylesheet and let a re-enabled mod pick the tree back up.
     this.renderer.clear();
-    document.documentElement.style.removeProperty("--ztt-indent-step");
+    const root = document.documentElement;
+    for (const name of APPEARANCE_VARS) {
+      root.style.removeProperty(name);
+    }
+    root.removeAttribute("ztt-depth-tint");
+    root.removeAttribute("ztt-tree-colors");
+  }
+
+  /** Pushes the appearance settings to the stylesheet as variables and attributes. */
+  #applyAppearance() {
+    const s = this.settings;
+    const root = document.documentElement;
+    const vars = {
+      "--ztt-indent-step": `${s.get("indentSize")}px`,
+      "--ztt-guide-style": s.get("guideStyle"),
+      "--ztt-guide-width": `${s.get("guideWidth")}px`,
+      "--ztt-guide-opacity": `${s.get("guideOpacity")}%`,
+      "--ztt-guide-active-opacity": `${s.get("guideActiveOpacity")}%`,
+      "--ztt-guide-gap": `${s.get("guideGap")}px`,
+      "--ztt-guide-top-gap": `${s.get("guideTopGap")}px`,
+      "--ztt-depth-tint": `${s.get("depthTintStrength")}%`,
+      "--ztt-tree-strength": `${s.get("treeColorStrength")}%`,
+    };
+    for (const [name, value] of Object.entries(vars)) {
+      setStyleVar(root, name, value);
+    }
+    root.toggleAttribute("ztt-depth-tint", s.get("depthTint"));
+    const colors = s.get("treeColors");
+    if (colors === "off") {
+      root.removeAttribute("ztt-tree-colors");
+    } else {
+      root.setAttribute("ztt-tree-colors", colors);
+    }
   }
 
   // --------------------------------------------------------------- events
@@ -85,10 +144,13 @@ class ZenTreeTabs {
   handleEvent(event) {
     const target = event.target;
     switch (event.type) {
-      case "TabOpen":
-        this.#pendingOpens.add(target);
+      case "TabOpen": {
+        // The new tab isn't selected yet; remember what was, for "child of current tab".
+        const selected = gBrowser.selectedTab;
+        this.#pendingOpens.set(target, selected === target ? (target.owner ?? null) : selected);
         this.scheduleFlush();
         break;
+      }
       case "TabClose":
         this.#onTabClose(target);
         break;
@@ -113,6 +175,7 @@ class ZenTreeTabs {
         if (this.nodeOf(target).hasAttribute(ATTR.hidden)) {
           this.#expandAncestors(this.nodeOf(target));
         }
+        this.#autoCollapsePending = true; // done in the flush, once new tabs are nested
         this.scheduleFlush(); // highlight the new active path
         break;
       case "TabPinned":
@@ -130,11 +193,29 @@ class ZenTreeTabs {
     }
   }
 
-  #onTabOpen(tab) {
+  #onTabOpen(tab, selectedBefore) {
     const tree = this.tree;
+    const mode = this.settings.get("newTabMode");
+    if (mode === "none") {
+      return;
+    }
     let opener = tab.openerTab;
     if (opener?.hasAttribute("zen-glance-tab")) {
       opener = gZenGlanceManager.getTabOrGlanceParent(opener);
+    }
+    if (
+      !opener &&
+      mode === "current" &&
+      selectedBefore &&
+      !selectedBefore.closing &&
+      // Not tabs that appear for other reasons: restored sessions, or mirrors of
+      // a tab the user opened in another synced window (that window nests it).
+      !tab.hasAttribute("pending") &&
+      !tab.pinned &&
+      !this.#isMirroredChange() &&
+      !this.store.hasMirror(tab)
+    ) {
+      opener = selectedBefore;
     }
     if (!opener || opener.closing || !tree.isNode(tab) || tab.hasAttribute(ATTR.parent)) {
       return;
@@ -263,9 +344,9 @@ class ZenTreeTabs {
     try {
       const opens = [...this.#pendingOpens];
       this.#pendingOpens.clear();
-      for (const tab of opens) {
+      for (const [tab, selectedBefore] of opens) {
         this.store.pull(tab);
-        this.#onTabOpen(tab);
+        this.#onTabOpen(tab, selectedBefore);
       }
 
       const grouped = [...this.#pendingGrouped];
@@ -289,6 +370,11 @@ class ZenTreeTabs {
       );
       for (const node of sorted) {
         this.#onNodeMoved(node);
+      }
+
+      if (this.#autoCollapsePending) {
+        this.#autoCollapsePending = false;
+        this.#autoCollapse(this.nodeOf(gBrowser.selectedTab));
       }
     } catch (e) {
       console.error("zen-tree-tabs: flush failed", e);
@@ -393,11 +479,155 @@ class ZenTreeTabs {
   }
 
   closeTree(node) {
-    gBrowser.removeTabs(this.tree.tabsOf(this.tree.subtreeOf(node)));
+    this.#removeTabsDirectly(this.tree.tabsOf(this.tree.subtreeOf(node)));
   }
 
   closeChildren(node) {
-    gBrowser.removeTabs(this.tree.tabsOf(this.tree.descendantsOf(node)));
+    this.#removeTabsDirectly(this.tree.tabsOf(this.tree.descendantsOf(node)));
+  }
+
+  /** Closes tabs without the close-branch planning or warning (the user asked for exactly these). */
+  #removeTabsDirectly(tabs) {
+    this.#withMarks(tabs, () => gBrowser.removeTabs(tabs));
+  }
+
+  #withMarks(tabs, fn) {
+    for (const t of tabs) {
+      this.#closeMarks.add(t);
+    }
+    try {
+      return fn();
+    } finally {
+      // Cleared later: a close can finish asynchronously, or be cancelled by a prompt.
+      setTimeout(() => {
+        for (const t of tabs) {
+          this.#closeMarks.delete(t);
+        }
+      }, 1500);
+    }
+  }
+
+  // ---------------------------------------------------- close-branch logic
+
+  /**
+   * Wraps gBrowser.removeTab / removeTabs. When the setting asks for it, closing a
+   * tab that has children also closes them (after an optional warning); otherwise
+   * everything is passed straight through and #onTabClose promotes the children.
+   * Returns the function that restores the originals.
+   */
+  #guardClosing() {
+    const self = this;
+    const { removeTab, removeTabs } = gBrowser;
+    gBrowser.removeTab = function (tab, options) {
+      if (self.#closeMarks.has(tab)) {
+        return removeTab.call(this, tab, options);
+      }
+      const plan = self.#planClose([tab]);
+      if (!plan) {
+        return removeTab.call(this, tab, options);
+      }
+      if (!self.#confirmClose(plan)) {
+        return undefined;
+      }
+      return self.#withMarks(plan.tabs, () => removeTabs.call(this, plan.tabs));
+    };
+    gBrowser.removeTabs = function (tabs, options) {
+      const list = [...tabs];
+      if (list.every(t => self.#closeMarks.has(t))) {
+        return removeTabs.call(this, tabs, options);
+      }
+      const plan = self.#planClose(list);
+      if (plan && !self.#confirmClose(plan)) {
+        return undefined;
+      }
+      const all = plan ? plan.tabs : list;
+      return self.#withMarks(all, () => removeTabs.call(this, all, options));
+    };
+    return () => {
+      // The originals live on the prototype.
+      delete gBrowser.removeTab;
+      delete gBrowser.removeTabs;
+    };
+  }
+
+  /** Which extra tabs close with `tabs` under the current setting, or null for none. */
+  #planClose(tabs) {
+    const mode = this.settings.get("closeParentMode");
+    if (mode === "promote") {
+      return null;
+    }
+    const tree = this.tree;
+    const closing = new Set(tabs);
+    const all = new Set(tabs);
+    const extra = [];
+    for (const tab of tabs) {
+      if (!gBrowser.isTab(tab)) {
+        continue;
+      }
+      const node = tree.nodeOf(tab);
+      // A split view that lives on keeps its place; only a node closing entirely takes its branch along.
+      if (!tree.isNode(node) || !tree.membersOf(node).every(m => closing.has(m))) {
+        continue;
+      }
+      if (mode === "collapsed" && !tree.isCollapsed(node)) {
+        continue;
+      }
+      for (const t of tree.tabsOf(tree.descendantsOf(node))) {
+        if (!all.has(t)) {
+          all.add(t);
+          extra.push(t);
+        }
+      }
+    }
+    return extra.length ? { tabs: [...all], extra } : null;
+  }
+
+  #confirmClose(plan) {
+    const settings = this.settings;
+    const n = plan.extra.length;
+    if (!settings.get("closeWarning") || n < settings.get("closeWarningMin")) {
+      return true;
+    }
+    const check = { value: false };
+    const ok = Services.prompt.confirmCheck(
+      window,
+      "Close whole branch?",
+      n === 1
+        ? "Closing this tab will also close 1 tab nested under it."
+        : `Closing this tab will also close ${n} tabs nested under it.`,
+      "Don't ask me again",
+      check
+    );
+    if (ok && check.value) {
+      settings.set("closeWarning", false);
+    }
+    return ok;
+  }
+
+  // ---------------------------------------------------------- auto-collapse
+
+  /** Collapses branches that don't lead to the selected node, per the "autoCollapse" setting. */
+  #autoCollapse(selected) {
+    const mode = this.settings.get("autoCollapse");
+    const tree = this.tree;
+    if (mode === "off" || !tree.isNode(selected)) {
+      return;
+    }
+    const path = new Set([selected]);
+    for (let p = tree.parentOf(selected), i = 0; p && i < MAX_DEPTH_WALK; p = tree.parentOf(p), i++) {
+      path.add(p);
+    }
+    for (const node of tree.allNodes()) {
+      if (node.parentElement !== selected.parentElement || path.has(node)) {
+        continue; // other spaces are left alone
+      }
+      if (mode === "roots" && tree.parentOf(node)) {
+        continue;
+      }
+      if (node.hasAttribute(ATTR.hasChildren)) {
+        tree.setCollapsedAttr(node, true);
+      }
+    }
   }
 
   // ------------------------------------- public API (other windows, tools)
