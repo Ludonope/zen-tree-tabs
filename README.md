@@ -4,10 +4,10 @@ Tree Style Tab–like tab trees for [Zen](https://zen-browser.app), right in Zen
 tab list. Links you open land under the page they came from, so a rabbit hole stays
 one tidy branch.
 
-| Collapse and expand | Move a branch | Coloured Trees |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/collapse.gif" width="300" alt="Animation: hovering the History of coffee tab's icon turns it into an arrow; clicking collapses its three child tabs and a badge showing 3 appears. Collapsing the Coffee tab folds the whole tree into one row with a badge showing 8. Expanding Coffee again shows History of coffee still collapsed, which is then expanded too."> | <img src="docs/screenshots/drag-subtree.gif" width="300" alt="Animation: the Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse."> | <img src="docs/screenshots/coloured-trees.png" width="300" alt="A Zen browser window on a dark background shows a column of vertically nested, colour-coded tab trees."> |
-| Hover a parent's icon and click. Collapsed branches show how many tabs they hide. | Drop a tab on another and its children come along. | Separately coloured trees by their parent root tab |
+| Collapse and expand | Move a branch |
+| :---: | :---: |
+| <img src="docs/screenshots/collapse.gif" width="300" alt="Animation: hovering the History of coffee tab's icon turns it into an arrow; clicking collapses its three child tabs and a badge showing 3 appears. Collapsing the Coffee tab folds the whole tree into one row with a badge showing 8. Expanding Coffee again shows History of coffee still collapsed, which is then expanded too."> | <img src="docs/screenshots/drag-subtree.gif" width="300" alt="Animation: the Espresso tab, which has three tabs under it, is dragged onto the Coffeehouse tab; Coffeehouse gets outlined, and after the drop Espresso and all its children sit nested under Coffeehouse."> |
+| Hover a parent's icon and click. Collapsed branches show how many tabs they hide. | Drop a tab on another and its children come along. |
 
 ## Features
 
