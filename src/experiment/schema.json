@@ -1,6 +1,31 @@
 [
   {
     "namespace": "zenTreeTabs",
-    "functions": []
+    "functions": [
+      {
+        "name": "getPrefs",
+        "type": "function",
+        "async": true,
+        "description": "All stored preference values of the add-on, keyed by short name.",
+        "parameters": []
+      },
+      {
+        "name": "setPref",
+        "type": "function",
+        "async": true,
+        "description": "Sets one preference (boolean, integer or string). Browser windows apply it live.",
+        "parameters": [
+          { "name": "name", "type": "string" },
+          { "name": "value", "type": "any" }
+        ]
+      },
+      {
+        "name": "resetPrefs",
+        "type": "function",
+        "async": true,
+        "description": "Restores every preference to its default.",
+        "parameters": []
+      }
+    ]
   }
 ]

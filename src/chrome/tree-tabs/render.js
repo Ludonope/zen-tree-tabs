@@ -5,13 +5,25 @@
 
 class Renderer {
   #tree;
+  #settings;
   /** Favicon geometry, see #measure(). */
   #metrics = { tabCenter: 19, groupCenter: 19, groupInset: 4, groupInsetTop: 4, groupInsetBottom: 4 };
   /** tab -> other members of its split group as of the last render. */
   splitMates = new WeakMap();
 
-  constructor(tree) {
+  constructor(tree, settings) {
     this.#tree = tree;
+    this.#settings = settings;
+  }
+
+  /** A stable hue (0-359) per tree, from its root tab's id. */
+  #hueOf(root) {
+    const id = this.#tree.leadOf(root)?.id ?? "";
+    let hash = 5381;
+    for (let i = 0; i < id.length; i++) {
+      hash = ((hash << 5) + hash + id.charCodeAt(i)) | 0;
+    }
+    return ((Math.abs(hash) % 12) * 30 + 15) % 360; // 12 well-spaced hues
   }
 
   /** Brings every tab's decorations in line with the tree. */
@@ -42,6 +54,9 @@ class Renderer {
       }
     }
 
+    const indent = this.#settings.get("indentSize");
+    const gap = this.#settings.get("guideGap");
+    const colorTrees = this.#settings.get("treeColors") !== "off";
     const descendantCounts = new Map();
     for (const { ancestors } of info.values()) {
       for (const a of ancestors) {
@@ -79,6 +94,13 @@ class Renderer {
         node.removeAttribute(ATTR.depth);
       }
       setDepthVar(node, depth);
+      if (colorTrees && (depth || count)) {
+        setAttr(node, ATTR.hue, "true");
+        setHueVar(node, this.#hueOf(ancestors[0] ?? node));
+      } else {
+        node.removeAttribute(ATTR.hue);
+        setHueVar(node, null);
+      }
       node.toggleAttribute(ATTR.hidden, hidden);
       node.toggleAttribute(ATTR.hasChildren, count > 0);
 
@@ -96,11 +118,11 @@ class Renderer {
       this.#decorate(node, count, tree.isCollapsed(node), ancestors, [...ancestors.slice(1), node].map(hasLaterSibling), {
         columns: activeColumns(node, ancestors),
         stub: pathIndex.has(node) && node !== selectedNode,
-      });
+      }, indent, gap);
     }
 
     // Tabs and groups that are not (or no longer) tree nodes.
-    for (const el of document.querySelectorAll("[ztt-depth], [ztt-has-children], [ztt-hidden], [ztt-twisty], [ztt-guides]")) {
+    for (const el of document.querySelectorAll("[ztt-depth], [ztt-has-children], [ztt-hidden], [ztt-hue], [ztt-twisty], [ztt-guides]")) {
       if (!info.has(el) && !(gBrowser.isTab(el) && info.has(tree.nodeOf(el)))) {
         this.#clearComputed(el);
         this.#removeDecorations(el);
@@ -110,7 +132,7 @@ class Renderer {
 
   /** Removes every decoration (the links stay, see ZenTreeTabs.uninit). */
   clear() {
-    for (const el of document.querySelectorAll("[ztt-depth], [ztt-has-children], [ztt-hidden], [ztt-twisty], [ztt-guides]")) {
+    for (const el of document.querySelectorAll("[ztt-depth], [ztt-has-children], [ztt-hidden], [ztt-hue], [ztt-twisty], [ztt-guides]")) {
       this.#clearComputed(el);
       this.#removeDecorations(el);
     }
@@ -124,6 +146,7 @@ class Renderer {
       el.removeAttribute(attr);
     }
     setDepthVar(el, 0);
+    setHueVar(el, null);
   }
 
   #removeDecorations(tab) {
@@ -142,7 +165,7 @@ class Renderer {
    *                   (off), 1 (whole row) or 2 (down to this node) for the
    *                   ancestor-k column; `stub` lights the line under the favicon.
    */
-  #decorate(node, count, collapsed, ancestors, continues, active) {
+  #decorate(node, count, collapsed, ancestors, continues, active, INDENT, gap) {
     const tab = this.#tree.leadOf(node);
     if (count) {
       const icon = tab.querySelector(".tab-icon-stack");
@@ -178,33 +201,33 @@ class Renderer {
     const inset = isTab ? 0 : metrics.groupInset;
     const insetTop = isTab ? 0 : metrics.groupInsetTop;
     const insetBottom = isTab ? 0 : metrics.groupInsetBottom;
-    const ownCenter = depth * INDENT_PX + centerOf(node);
+    const ownCenter = depth * INDENT + centerOf(node);
     // Segments are bordered elements rather than background gradients: borders
     // snap to whole device pixels, so every segment has the same crisp
     // thickness at any zoom level (gradients blur across 1 or 2 pixels).
     const segments = []; // [x, kind ("full" | "stub" | "elbow"), lit, width]
     for (let k = 0; k < depth - 1; k++) {
       if (continues[k]) {
-        segments.push([k * INDENT_PX + centerOf(ancestors[k]), "full", active.columns[k] === 1]);
+        segments.push([k * INDENT + centerOf(ancestors[k]), "full", active.columns[k] === 1]);
       }
     }
     const ownColumn = active.columns[depth - 1];
     if (depth) {
-      const x = (depth - 1) * INDENT_PX + centerOf(ancestors.at(-1));
+      const x = (depth - 1) * INDENT + centerOf(ancestors.at(-1));
       if (continues[depth - 1]) {
         segments.push([x, "full", ownColumn === 1]);
       }
       // Rounded branch into the favicon: always for the last child, and for a
       // middle child when the highlighted path turns into it.
       if (!continues[depth - 1] || ownColumn === 2) {
-        segments.push([x, "elbow", ownColumn === 2, ownCenter - 11 - x]);
+        segments.push([x, "elbow", ownColumn === 2, Math.max(0, ownCenter - 11 - gap - x)]);
       }
     }
     if (stub) {
       segments.push([ownCenter, "stub", active.stub]);
     }
     const css =
-      `left:${-(depth * INDENT_PX + inset)}px;width:${ownCenter + 1}px;` +
+      `left:${-(depth * INDENT + inset)}px;width:${ownCenter + 1}px;` +
       `top:${-insetTop}px;bottom:${-insetBottom}px`;
 
     let guides = tab.querySelector(":scope > .ztt-guides");

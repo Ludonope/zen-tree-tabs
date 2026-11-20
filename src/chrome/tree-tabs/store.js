@@ -74,6 +74,11 @@ class Store {
     }
   }
 
+  /** Whether another window holds a mirrored copy of `tab` (it was synced, not opened here). */
+  hasMirror(tab) {
+    return !this.#mirrorsOf(tab).next().done;
+  }
+
   /** Another window changed the mirrored copy of `tab`. */
   receive(tab, value) {
     if (this.stateOf(tab) !== value) {

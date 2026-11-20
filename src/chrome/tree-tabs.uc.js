@@ -6,7 +6,9 @@
  * loads tree-tabs.css, and exposes window.gZenTreeTabs; stop() removes
  * everything again.
  *
+ *   tree-tabs/schema.js      settings schema (shared with the options page)
  *   tree-tabs/common.js      constants and DOM helpers
+ *   tree-tabs/settings.js    preferences access, shortcut parsing
  *   tree-tabs/tree.js        the tree model: nodes, links, queries, edits
  *   tree-tabs/render.js      depth, visibility, twisty, badge, guide lines
  *   tree-tabs/store.js       session persistence and window sync
@@ -21,7 +23,7 @@
   if (window.gZenTreeTabs) {
     return;
   }
-  const PARTS = ["common", "tree", "render", "store", "dnd", "ui", "controller"];
+  const PARTS = ["schema", "common", "settings", "tree", "render", "store", "dnd", "ui", "controller"];
 
   const scriptURL = Components.stack.filename;
   const sibling = path => {

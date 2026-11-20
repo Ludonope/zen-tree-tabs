@@ -4,9 +4,19 @@
  * --ztt-depth is set on each indented node (tab or split-view group).
  */
 
+/* The --ztt-* values below are defaults; the settings (options page) override
+ * them on :root from controller.js (#applyAppearance). */
 :root {
-  --ztt-guide-color: color-mix(in srgb, currentColor 22%, transparent);
-  --ztt-guide-active-color: color-mix(in srgb, currentColor 85%, transparent);
+  --ztt-guide-style: solid;
+  --ztt-guide-width: 1px;
+  --ztt-guide-opacity: 22%;
+  --ztt-guide-active-opacity: 85%;
+  --ztt-guide-gap: 6px;
+  --ztt-guide-top-gap: 6px;
+  --ztt-depth-tint: 3%;
+  --ztt-tree-strength: 15%;
+  --ztt-guide-color: color-mix(in srgb, currentColor var(--ztt-guide-opacity), transparent);
+  --ztt-guide-active-color: color-mix(in srgb, currentColor var(--ztt-guide-active-opacity), transparent);
   /* Resolved here, where Zen's split view hasn't overridden it to 1. */
   --ztt-press-scale: var(--zen-active-tab-scale, 0.985);
 }
@@ -41,18 +51,20 @@
 .ztt-line {
   position: absolute;
   inset-block: 0;
-  border-inline-start: 1px solid var(--ztt-guide-color);
+  border-inline-start: var(--ztt-guide-width) var(--ztt-guide-style) var(--ztt-guide-color);
+  /* Keep a thicker line centred on the favicon column. */
+  margin-inline-start: calc((var(--ztt-guide-width) - 1px) / -2);
 
   /* From under the favicon down to the first child. */
   &[kind="stub"] {
-    top: calc(50% + 10px);
+    top: calc(50% + 10px + var(--ztt-guide-top-gap));
   }
   /* Rounded corner from the parent's line into the favicon. */
   &[kind="elbow"] {
     bottom: auto;
     height: calc(50% + 0.5px);
     box-sizing: border-box;
-    border-block-end: 1px solid var(--ztt-guide-color);
+    border-block-end: var(--ztt-guide-width) var(--ztt-guide-style) var(--ztt-guide-color);
     border-end-start-radius: 6px;
   }
   /* The selected tab's path, drawn above the regular lines. */
@@ -161,4 +173,33 @@ tab-group[split-view-group][ztt-drop-target] .tab-background {
   outline: 1.5px solid color-mix(in srgb, currentColor 60%, transparent) !important;
   outline-offset: -1.5px;
   background-color: color-mix(in srgb, currentColor 12%, transparent) !important;
+}
+
+/* --------------------------------------------------- per-tree colours (hue) */
+
+/* Lines: each tree draws its guides in its own hue (--ztt-hue is set per node). */
+:root:is([ztt-tree-colors="guides"], [ztt-tree-colors="both"]) :is(.tabbrowser-tab, tab-group[split-view-group])[ztt-hue] {
+  --ztt-guide-color: color-mix(in srgb, hsl(var(--ztt-hue) 75% 55%) min(100%, calc(var(--ztt-guide-opacity) * 1.6)), transparent);
+  --ztt-guide-active-color: hsl(var(--ztt-hue) 75% 55% / 0.95);
+}
+
+/* Rows: a faint wash of the tree's hue. Selected, multi-selected and hovered rows
+ * keep Zen's own look, and the drop-target outline above still wins. */
+:root:is([ztt-tree-colors="rows"], [ztt-tree-colors="both"]) {
+  & .tabbrowser-tab[ztt-hue]:not([selected], [multiselected], :hover) .tab-background,
+  & tab-group[split-view-group][ztt-hue]:not(:has([selected], [multiselected]), :hover) .tab-background {
+    background-color: color-mix(in srgb, hsl(var(--ztt-hue) 70% 55%) var(--ztt-tree-strength), transparent);
+  }
+}
+
+/* ---------------------------------------------------------- depth tint */
+
+/* Deeper rows get a slightly stronger neutral shade (a gradient layer, so it
+ * stacks with the per-tree colour instead of replacing it). */
+:root[ztt-depth-tint] {
+  & .tabbrowser-tab[ztt-depth]:not([selected], [multiselected], :hover) .tab-background,
+  & tab-group[split-view-group][ztt-depth]:not(:has([selected], [multiselected]), :hover) .tab-background {
+    --ztt-depth-shade: color-mix(in srgb, currentColor min(30%, calc(var(--ztt-depth) * var(--ztt-depth-tint))), transparent);
+    background-image: linear-gradient(var(--ztt-depth-shade), var(--ztt-depth-shade));
+  }
 }
